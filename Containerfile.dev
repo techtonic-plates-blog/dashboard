@@ -1,0 +1,4 @@
+FROM docker.io/oven/bun:1
+
+RUN apt update -y
+RUN apt install -y git

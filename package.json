@@ -1,0 +1,57 @@
+{
+  "name": "example-basic",
+  "type": "module",
+  "scripts": {
+    "update-api-client": "bun run update-posts-client && bun run update-auth-client && bun run update-assets-client",
+    "beforedev": "bun run update-api-client",
+    "dev": "vinxi dev",
+    "beforebuild": "bun run update-api-client",
+    "build": "vinxi build",
+    "beforestart": "bun run update-api-client",
+    "start": "vinxi start",
+    "version": "vinxi version",
+    "test": "vitest",
+    "add-component": "bunx shadcn@latest add",
+    "update-posts-client": "bunx openapi-typescript $POSTS_API/docs/api.json -o ./src/lib/.api/posts-client.ts",
+    "update-auth-client": "bunx openapi-typescript $AUTH_API/docs/api.json -o ./src/lib/.api/auth-client.ts",
+    "update-assets-client": "bunx openapi-typescript $ASSETS_API/docs/api.json -o ./src/lib/.api/assets-client.ts"
+  },
+  "dependencies": {
+    "@kobalte/core": "^0.13.10",
+    "@macaron-css/core": "^1.5.2",
+    "@macaron-css/solid": "^1.5.3",
+    "@macaron-css/vite": "^1.5.1",
+    "@myriaddreamin/typst-ts-node-compiler": "^0.6.1-rc1",
+    "@preline/layout-splitter": "^3.0.0",
+    "@preline/overlay": "^3.0.0",
+    "@solidjs/meta": "^0.29.4",
+    "@solidjs/router": "^0.15.0",
+    "@solidjs/start": "^1.1.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "install": "^0.13.0",
+    "lucide-solid": "^0.514.0",
+    "openapi-fetch": "^0.14.0",
+    "solid-js": "^1.9.7",
+    "solid-styled-components": "^0.28.5",
+    "surrealdb": "^1.3.2",
+    "tailwind-merge": "^3.3.0",
+    "tw-animate-css": "^1.3.3",
+    "vinxi": "^0.5.3",
+    "zod": "^3.25.50"
+  },
+  "devDependencies": {
+    "@solidjs/testing-library": "^0.8.10",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/postcss": "^4.1.7",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/user-event": "^14.6.1",
+    "jsdom": "^26.1.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.8",
+    "vitest": "^3.1.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
