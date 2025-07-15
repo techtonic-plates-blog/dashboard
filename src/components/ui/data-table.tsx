@@ -130,18 +130,21 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
 
     // Apply individual column filters
     const currentFilters = filters()
-    Object.entries(currentFilters).forEach(([key, filterValue]) => {
-      if (filterValue !== null && filterValue !== undefined && filterValue !== "") {
-        result = result.filter((item) => {
-          const itemValue = item[key as keyof TData]
-          
-          // Handle array values (like permissions)
-          if (Array.isArray(itemValue)) {
-            return itemValue.includes(filterValue)
-          }
-          
-          return itemValue === filterValue
-        })
+    Object.entries(currentFilters).forEach(([key, filterValues]) => {
+      if (filterValues !== null && filterValues !== undefined) {
+        const valuesArray = Array.isArray(filterValues) ? filterValues : [filterValues]
+        if (valuesArray.length > 0) {
+          result = result.filter((item) => {
+            const itemValue = item[key as keyof TData]
+            
+            // Handle array values (like permissions)
+            if (Array.isArray(itemValue)) {
+              return valuesArray.some(filterValue => itemValue.includes(filterValue))
+            }
+            
+            return valuesArray.includes(itemValue)
+          })
+        }
       }
     })
 
@@ -299,10 +302,30 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
 
   // Handle filter selection
   const handleFilterSelect = (columnKey: keyof TData, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [columnKey]: value
-    }))
+    setFilters(prev => {
+      const currentValues = prev[columnKey] || []
+      const valuesArray = Array.isArray(currentValues) ? currentValues : [currentValues]
+      
+      // If the value is already selected, remove it
+      if (valuesArray.includes(value)) {
+        const newValues = valuesArray.filter(v => v !== value)
+        if (newValues.length === 0) {
+          const newFilters = { ...prev }
+          delete newFilters[columnKey]
+          return newFilters
+        }
+        return {
+          ...prev,
+          [columnKey]: newValues
+        }
+      } else {
+        // Add the new value to the array
+        return {
+          ...prev,
+          [columnKey]: [...valuesArray, value]
+        }
+      }
+    })
   }
 
   // Handle filter clear
@@ -362,10 +385,13 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
               variant="outline"
               size="sm"
               onClick={() => setShowMobileFilters(!showMobileFilters())}
-              class="flex items-center"
+              class={`flex items-center relative ${hasActiveFilters() ? "border-primary" : ""}`}
             >
-              <Funnel class="h-4 w-4 mr-2" />
+              <Funnel class={`h-4 w-4 mr-2 ${hasActiveFilters() ? "text-primary" : ""}`} />
               {showMobileFilters() ? "Hide filters" : "Show filters"}
+              <Show when={hasActiveFilters()}>
+                <span class="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full"></span>
+              </Show>
             </Button>
             <Show when={hasActiveFilters()}>
               <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -380,13 +406,15 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
               {/* Search input */}
               <Show when={(props.searchableColumns || []).length > 0}>
                 <div class="relative w-full md:w-auto">
-                  <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Search class={`absolute left-2 top-2.5 h-4 w-4 ${searchTerm() ? "text-primary" : "text-muted-foreground"}`} />
                   <input
                     type="text"
                     placeholder={`Search...`}
                     value={searchTerm()}
                     onInput={(e) => setSearchTerm(e.currentTarget.value)}
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-8"
+                    class={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-8 ${
+                      searchTerm() ? "border-primary" : "border-input"
+                    }`}
                   />
                   <Show when={searchTerm()}>
                     <Button
@@ -405,46 +433,61 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
               <div class="flex flex-wrap items-center gap-2">
                 <For each={filterableColumns()}>
                   {(column) => {
-                    const currentFilters = filters()
+                    const currentFilters = () => filters()
                     const uniqueValues = getUniqueValues(column.key)
-                    const hasFilter = currentFilters[column.key] !== undefined
+                    const filterValues = () => currentFilters()[column.key]
+                    const selectedValues = () => {
+                      const values = filterValues()
+                      return Array.isArray(values) ? values : (values ? [values] : [])
+                    }
+                    const hasFilter = () => selectedValues().length > 0
 
                     return (
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" class="h-9">
-                            <Funnel class="mr-2 h-4 w-4" />
+                        <DropdownMenuTrigger>
+                          <Button 
+                            variant={hasFilter() ? "default" : "outline"} 
+                            size="sm" 
+                            class={`h-9 relative ${hasFilter() ? "bg-primary text-primary-foreground" : ""}`}
+                          >
+                            <Funnel class={`mr-2 h-4 w-4 ${hasFilter() ? "text-primary-foreground" : ""}`} />
                             {column.label}
-                            <Show when={hasFilter}>
-                              <span class="ml-1 text-xs bg-primary text-primary-foreground rounded px-1">1</span>
+                            <Show when={hasFilter()}>
+                              <span class="ml-1 text-xs bg-primary-foreground text-primary rounded-full px-1.5 py-0.5 min-w-[16px] text-center">
+                                {selectedValues().length}
+                              </span>
                             </Show>
-                            <ChevronDown class="ml-2 h-4 w-4" />
+                            <ChevronDown class={`ml-2 h-4 w-4 ${hasFilter() ? "text-primary-foreground" : ""}`} />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" class="w-48">
+                        <DropdownMenuContent class="w-48">
                           <For each={uniqueValues}>
                             {(value) => {
-                              const isSelected = currentFilters[column.key] === value
+                              const isSelected = () => selectedValues().includes(value)
 
                               return (
                                 <DropdownMenuItem
                                   onClick={() => handleFilterSelect(column.key, value)}
-                                  class="flex items-center justify-between cursor-pointer"
+                                  class={`flex items-center cursor-pointer px-2 py-2 hover:bg-accent hover:text-accent-foreground ${
+                                    isSelected() ? "bg-accent text-accent-foreground font-medium" : ""
+                                  }`}
                                 >
-                                  <span class="flex-1">
-                                    {column.renderInFilter && column.render 
-                                      ? column.render(value, {} as TData) 
-                                      : String(value)
-                                    }
-                                  </span>
-                                  <Show when={isSelected}>
-                                    <Check class="h-4 w-4" />
-                                  </Show>
+                                  <div class="flex items-center justify-between w-full">
+                                    <span class="flex-1 truncate pr-2">
+                                      {column.renderInFilter && column.render 
+                                        ? column.render(value, {} as TData) 
+                                        : String(value)
+                                      }
+                                    </span>
+                                    <Show when={isSelected()}>
+                                      <Check class="h-4 w-4 text-primary flex-shrink-0" />
+                                    </Show>
+                                  </div>
                                 </DropdownMenuItem>
                               )
                             }}
                           </For>
-                          <Show when={hasFilter}>
+                          <Show when={hasFilter()}>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => handleFilterClear(column.key)}
@@ -461,7 +504,13 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
 
                 {/* Clear all filters button */}
                 <Show when={hasActiveFilters()}>
-                  <Button variant="ghost" size="sm" onClick={clearFilters} class="h-9">
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={clearFilters} 
+                    class="h-9 bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
+                  >
+                    <X class="mr-1 h-4 w-4" />
                     Clear all
                   </Button>
                 </Show>
