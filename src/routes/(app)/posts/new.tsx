@@ -66,7 +66,7 @@ const createPost = action(async (formData: FormData) => {
     }
 }, "createPost");
 
-export default function New() {
+export default function NewPost() {
     const navigate = useNavigate();
     const submission = useSubmission(createPost);
 

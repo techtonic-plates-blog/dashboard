@@ -2,7 +2,7 @@ import { Title } from "@solidjs/meta";
 import DataTable from "~/components/ui/data-table";
 import { createResource, ErrorBoundary, Show, Suspense, createSignal, For } from "solid-js";
 import { authClient } from "~/lib/client";
-import { createAsync, query, RouteDefinition } from "@solidjs/router";
+import { A, createAsync, query, RouteDefinition } from "@solidjs/router";
 import type { Column } from "~/components/ui/data-table";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -116,9 +116,6 @@ const columns: Column<{
 export default function Users() {
 
     const users = createAsync(() => usersDataQuery());
-
-    const [userPermissions, setUserPermissions] = createSignal<Record<string, string[] | 'loading' | 'error'>>({});
-
     const handleRowClick = (user: any) => {
         console.log("Clicked user:", user);
     };
@@ -128,6 +125,7 @@ export default function Users() {
             <Title>Users</Title>
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold">Users</h1>
+                <Button><A href="/users/create">Create user</A></Button>
             </div>
             <section>
                 <ErrorBoundary fallback={(err, reset) => (
