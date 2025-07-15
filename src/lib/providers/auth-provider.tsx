@@ -79,7 +79,6 @@ const getCurrentUserQuery = query(async () => {
         const sessionData = session.data;
 
         if (sessionData?.user) {
-            // Optionally verify with API (can be disabled for performance)
             return { success: true, user: sessionData.user };
         }
 
@@ -126,7 +125,6 @@ export function AuthProvider(props: { children: JSX.Element }) {
         isLoading: true,
     });
 
-    // Use useAction to get the action function
     const loginActionFn = useAction(loginAction);
     const logoutActionFn = useAction(logoutAction);
 

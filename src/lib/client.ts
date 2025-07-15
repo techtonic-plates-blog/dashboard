@@ -4,7 +4,7 @@ import createClient, { Middleware } from "openapi-fetch";
 import { paths as postsPaths } from "$api/posts-client";
 import { paths as authPaths } from "$api/auth-client";
 import { paths as assetsPaths } from "$api/assets-client";
-import { useSession, clearUserSession, isSessionValid, getJwtToken, refreshTokenIfNeeded, refreshJwtToken } from "./session";
+import { useSession, clearUserSession, isSessionValid, getJwtToken, refreshJwtToken } from "./session";
 import { redirect } from "@solidjs/router";
 
 // Combined auth middleware that handles JWT injection and 401 responses

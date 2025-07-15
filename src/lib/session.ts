@@ -62,7 +62,6 @@ export async function isSessionValid(): Promise<boolean> {
     const now = Date.now();
     const maxInactivity = 60 * 60 * 1000; // 1 hour of inactivity
     
-    // Check if tokens are expired
     if (data.tokens.jwtExp < now / 1000) {
         return false;
     }
@@ -91,33 +90,6 @@ export async function getJwtToken(): Promise<string | null> {
     }
 }
 
-export async function refreshTokenIfNeeded(): Promise<boolean> {
-    try {
-        const session = await useSession();
-        const sessionData = session.data;
-        
-        if (!sessionData?.tokens) {
-            return false;
-        }
-        
-        const now = Date.now() / 1000;
-        const jwtExp = sessionData.tokens.jwtExp;
-        const refresherExp = sessionData.tokens.refresherExp;
-        
-        // If JWT is expired but refresher is still valid
-        if (jwtExp < now && refresherExp > now) {
-            // Here you could implement token refresh logic
-            // For now, just return false to indicate refresh is needed
-            console.log("JWT expired, refresh token is available but refresh logic not implemented");
-            return false;
-        }
-        
-        return jwtExp > now;
-    } catch (error) {
-        console.error("Error checking token refresh:", error);
-        return false;
-    }
-}
 
 export async function refreshJwtToken(): Promise<boolean> {
     try {

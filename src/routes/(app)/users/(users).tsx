@@ -100,11 +100,9 @@ export default function Users() {
 
     const users = createAsync(() => usersDataQuery());
 
-    // Track which user permissions are being loaded or have been loaded
     const [userPermissions, setUserPermissions] = createSignal<Record<string, string[] | 'loading' | 'error'>>({});
 
     const handleRowClick = (user: any) => {
-        // You can implement user detail view here
         console.log("Clicked user:", user);
     };
 
