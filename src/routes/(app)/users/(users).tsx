@@ -1,6 +1,6 @@
 import { Title } from "@solidjs/meta";
 import DataTable from "~/components/ui/data-table";
-import { createResource, ErrorBoundary, Show, Suspense, createSignal } from "solid-js";
+import { createResource, ErrorBoundary, Show, Suspense, createSignal, For } from "solid-js";
 import { authClient } from "~/lib/client";
 import { createAsync, query, RouteDefinition } from "@solidjs/router";
 import type { Column } from "~/components/ui/data-table";
@@ -91,8 +91,25 @@ const columns: Column<{
         {
             key: "permissions",
             label: "Permissions",
-            filterable: false,
-            sortable: false,
+            filterable: true,
+            sortable: true,
+            render: (permissions: string[]) => (
+                <div class="max-w-48 max-h-20 overflow-y-auto">
+                    <div class="flex flex-col gap-1">
+                        {permissions?.length > 0 ? (
+                            <For each={permissions}>
+                                {(permission) => (
+                                    <span class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full whitespace-nowrap">
+                                        {permission}
+                                    </span>
+                                )}
+                            </For>
+                        ) : (
+                            <span class="text-gray-500 text-xs">No permissions</span>
+                        )}
+                    </div>
+                </div>
+            ),
         },
     ];
 

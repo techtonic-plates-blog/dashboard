@@ -92,8 +92,21 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
 
   // Get unique values for dropdown filters
   const getUniqueValues = (key: keyof TData) => {
-    const values = Array.from(new Set(allData().map((item) => item[key])))
-    return values.filter((value) => value !== null && value !== undefined)
+    const valuesSet = new Set<any>()
+    
+    allData().forEach((item) => {
+      const value = item[key]
+      if (value !== null && value !== undefined) {
+        // Handle array values (like permissions)
+        if (Array.isArray(value)) {
+          value.forEach((v: any) => valuesSet.add(v))
+        } else {
+          valuesSet.add(value)
+        }
+      }
+    })
+    
+    return Array.from(valuesSet).sort()
   }
 
   // Computed filtered data (without pagination)
@@ -120,6 +133,12 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
       if (filterValue !== null && filterValue !== undefined && filterValue !== "") {
         result = result.filter((item) => {
           const itemValue = item[key as keyof TData]
+          
+          // Handle array values (like permissions)
+          if (Array.isArray(itemValue)) {
+            return itemValue.includes(filterValue)
+          }
+          
           return itemValue === filterValue
         })
       }
@@ -131,6 +150,36 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
       result.sort((a, b) => {
         const aValue = a[currentSortConfig.key as keyof TData]
         const bValue = b[currentSortConfig.key as keyof TData]
+
+        // Handle array values (like permissions) - sort by array length then by first element
+        if (Array.isArray(aValue) && Array.isArray(bValue)) {
+          // First compare by array length
+          const lengthComparison = aValue.length - bValue.length
+          if (lengthComparison !== 0) {
+            return currentSortConfig.direction === "ascending" ? lengthComparison : -lengthComparison
+          }
+          
+          // If same length, compare by first element (or empty string if no elements)
+          const aFirst = aValue.length > 0 ? String(aValue[0]) : ""
+          const bFirst = bValue.length > 0 ? String(bValue[0]) : ""
+          const comparison = aFirst.localeCompare(bFirst)
+          return currentSortConfig.direction === "ascending" ? comparison : -comparison
+        }
+        
+        // Handle case where one is array and other is not
+        if (Array.isArray(aValue) && !Array.isArray(bValue)) {
+          const aStr = aValue.length > 0 ? String(aValue[0]) : ""
+          const bStr = String(bValue)
+          const comparison = aStr.localeCompare(bStr)
+          return currentSortConfig.direction === "ascending" ? comparison : -comparison
+        }
+        
+        if (!Array.isArray(aValue) && Array.isArray(bValue)) {
+          const aStr = String(aValue)
+          const bStr = bValue.length > 0 ? String(bValue[0]) : ""
+          const comparison = aStr.localeCompare(bStr)
+          return currentSortConfig.direction === "ascending" ? comparison : -comparison
+        }
 
         // Handle different data types
         if (typeof aValue === "number" && typeof bValue === "number") {
@@ -249,16 +298,19 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
 
   // Handle filter selection
   const handleFilterSelect = (columnKey: keyof TData, value: any) => {
-    const newFilters = { ...filters() }
-    newFilters[columnKey] = value
-    setFilters(newFilters)
+    setFilters(prev => ({
+      ...prev,
+      [columnKey]: value
+    }))
   }
 
   // Handle filter clear
   const handleFilterClear = (columnKey: keyof TData) => {
-    const newFilters = { ...filters() }
-    delete newFilters[columnKey]
-    setFilters(newFilters)
+    setFilters(prev => {
+      const newFilters = { ...prev }
+      delete newFilters[columnKey]
+      return newFilters
+    })
   }
 
   // Reset to first page when filters change
@@ -540,8 +592,8 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
                                     }}
                                   >
                                     <Tooltip>
-                                      <TooltipTrigger >
-                                        <div class="truncate cursor-help">
+                                      <TooltipTrigger class="w-full">
+                                        <div class="truncate cursor-help w-full">
                                           {column.render
                                             ? column.render(row[column.key], row)
                                             : String(row[column.key] ?? "")}
