@@ -94,7 +94,7 @@ const columns: Column<{
             filterable: true,
             sortable: true,
             render: (permissions: string[]) => (
-                <div class="max-w-48 max-h-20 overflow-y-auto">
+                <div class="w-full max-h-20 overflow-y-auto flex items-center justify-center">
                     <div class="flex flex-col gap-1">
                         {permissions?.length > 0 ? (
                             <For each={permissions}>

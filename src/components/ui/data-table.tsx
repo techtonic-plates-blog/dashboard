@@ -22,6 +22,7 @@ export interface Column<TData = any> {
   sortable?: boolean
   filterable?: boolean
   render?: (value: any, row: TData) => JSX.Element
+  renderInFilter?: boolean // New option to control if render function applies to filters
   filterType?: "select" | "text" | "number" | "date"
   priority?: number // Higher number = higher priority (keep visible longer)
 }
@@ -431,7 +432,10 @@ export default function DataTable<TData extends Record<string, any>>(props: Data
                                   class="flex items-center justify-between cursor-pointer"
                                 >
                                   <span class="flex-1">
-                                    {column.render ? column.render(value, {} as TData) : String(value)}
+                                    {column.renderInFilter && column.render 
+                                      ? column.render(value, {} as TData) 
+                                      : String(value)
+                                    }
                                   </span>
                                   <Show when={isSelected}>
                                     <Check class="h-4 w-4" />
