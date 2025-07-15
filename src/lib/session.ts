@@ -1,6 +1,7 @@
 
 import { type SessionConfig, useSession as useSessionBase } from "vinxi/http"
 import { User } from "./providers/auth-provider";
+import {anonymousAuthClient} from "./client";
 
 type SessionData = {
     user?: User;
@@ -135,10 +136,9 @@ export async function refreshJwtToken(): Promise<boolean> {
         }
         
         // Import authClient here to avoid circular dependency
-        const { authClient } = await import("./client");
-        
+     
         // Call the refresh endpoint
-        const { data, error } = await authClient.POST("/auth/refresh", {
+        const { data, error } = await anonymousAuthClient.POST("/auth/refresh", {
             body: { refresher: sessionData.tokens.refresher },
         });
         

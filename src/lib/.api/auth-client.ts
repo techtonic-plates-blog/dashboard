@@ -303,7 +303,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json; charset=utf-8": components["schemas"]["Users"];
+                        "application/json; charset=utf-8": components["schemas"]["UserWithPermissions"];
                     };
                 };
                 404: {
@@ -446,6 +446,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{uuid}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    uuid: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json; charset=utf-8": components["schemas"]["UpdatePasswordRequest"];
+                };
+            };
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/users/{uuid}/permissions": {
         parameters: {
             query?: never;
@@ -537,7 +593,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json; charset=utf-8": components["schemas"]["Users"][];
+                        "application/json; charset=utf-8": components["schemas"]["UserWithPermissions"][];
                     };
                 };
             };
@@ -618,7 +674,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json; charset=utf-8": components["schemas"]["UpdatePasswordRequest"];
+                    "application/json; charset=utf-8": components["schemas"]["UpdateMyPasswordRequest"];
                 };
             };
             responses: {
@@ -784,26 +840,29 @@ export interface components {
             jwt: components["schemas"]["Token"];
             refresher: components["schemas"]["Token"];
         };
+        /** UpdateMyPasswordRequest */
+        UpdateMyPasswordRequest: {
+            old_password: string;
+            new_password: string;
+        };
         /** UpdatePasswordRequest */
         UpdatePasswordRequest: {
-            old_password: string;
             new_password: string;
         };
         /** UpdateUserRequest */
         UpdateUserRequest: {
             name?: string;
-            password_hash?: string;
         };
         /** UpdateUsernameRequest */
         UpdateUsernameRequest: {
             new_username: string;
         };
-        /** Users */
-        Users: {
+        /** UserWithPermissions */
+        UserWithPermissions: {
             /** Format: uuid */
             id: string;
             name: string;
-            password_hash: string;
+            permissions: string[];
         };
     };
     responses: never;

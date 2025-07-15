@@ -116,18 +116,22 @@ export const postsClient = createClient<postsPaths>({
   baseUrl: process.env.POSTS_API,
 });
 
-// Add combined auth middleware to posts client
-postsClient.use(authMiddleware);
 
-// Create a client for the Auth API (no auth middleware to avoid loops)
+// Create a client for the Auth API
 export const authClient = createClient<authPaths>({
   baseUrl: process.env.AUTH_API,
 });
+
+export const anonymousAuthClient = createClient<authPaths>({
+  baseUrl: process.env.AUTH_API,
+});
+
 
 // Create a client for the Assets API
 export const assetsClient = createClient<assetsPaths>({
   baseUrl: process.env.ASSETS_API,
 });
 
-// Add combined auth middleware to assets client
 assetsClient.use(authMiddleware);
+postsClient.use(authMiddleware);
+authClient.use(authMiddleware);

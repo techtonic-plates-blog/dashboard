@@ -20,19 +20,19 @@ const loginAction = action(async (formData: FormData) => {
         const { data, error, response } = await authClient.POST("/auth/login", {
             body: { username, password },
         });
-        console.log(data);
-        console.log(error)
+       // console.log(data);
+     //   console.log(error)
         if (!error && data) {
-            console.log("here")
+            //console.log("here")
             const tokens = data as Tokens;
-            console.log("here")
+            //console.log("here")
             // Get user info after successful login
             const userResponse = await authClient.GET("/me", {
                 headers: {
                     Authorization: `Bearer ${tokens.jwt.token}`
                 }
             });
-            console.log(userResponse)
+           // console.log(userResponse)
             if (!userResponse.error && userResponse.data) {
                 console.log("here2")
                 const user = userResponse.data as User;

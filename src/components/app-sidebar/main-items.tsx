@@ -1,26 +1,46 @@
 import { For, JSX } from "solid-js";
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
 import { Button } from "~/components/ui/button";
+import { User } from "~/lib/providers/auth-provider";
+import { hasPermission, hasAnyUserPermission } from "~/lib/permissions";
 
 interface MainItem {
     title: string,
     href: string,
-    icon: JSX.Element
+    icon: JSX.Element,
+    requiredPermission?: string,
+    customPermissionCheck?: (user: User | null) => boolean
 }
 
 
 export interface MainItemsProps {
-    items: MainItem[]
+    items: MainItem[],
+    user: User | null
 }
 
 export default function MainItems(props: MainItemsProps) {
+    // Filter items based on user permissions
+    const visibleItems = () => props.items.filter(item => {
+        // Use custom permission check if provided
+        if (item.customPermissionCheck) {
+            return item.customPermissionCheck(props.user);
+        }
+        
+        // Use specific permission check if provided
+        if (item.requiredPermission) {
+            return hasPermission(props.user, item.requiredPermission);
+        }
+        
+        // Show items that don't require specific permissions
+        return true;
+    });
 
     return (
         <SidebarGroup>
             <SidebarGroupContent class="flex flex-col gap-2">
 
                 <SidebarMenu>
-                    <For each={props.items}>
+                    <For each={visibleItems()}>
                         {(item) => (
                             <SidebarMenuItem >
                                 <SidebarMenuButton tooltip={item.title}>
