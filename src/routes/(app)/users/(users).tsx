@@ -2,7 +2,7 @@ import { Title } from "@solidjs/meta";
 import DataTable from "~/components/ui/data-table";
 import { createResource, ErrorBoundary, Show, Suspense, createSignal, For } from "solid-js";
 import { authClient } from "~/lib/client";
-import { A, createAsync, query, RouteDefinition } from "@solidjs/router";
+import { A, createAsync, query, RouteDefinition, useNavigate } from "@solidjs/router";
 import type { Column } from "~/components/ui/data-table";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -15,7 +15,7 @@ const usersDataQuery = query(async () => {
     console.log(session.data.user?.permissions);
 
 
-    const { data: getUserIds, response: getUserIdsResponse, error } = await authClient.GET("/users", {
+    const { data: usernames, response: getUserIdsResponse, error } = await authClient.GET("/users", {
         headers: {
             "Content-Type": "application/json"
         }
@@ -25,16 +25,14 @@ const usersDataQuery = query(async () => {
         throw new Error(`Failed to fetch user IDs: ${getUserIdsResponse.statusText}, ${error}`);
     }
 
-    if (!getUserIds) {
+    if (!usernames) {
         const err = await getUserIdsResponse.text();
         throw new Error(`Failed to fetch users: ${err}`);
     }
 
-    const ids = getUserIds;
-
 
     let { data: usersData, response : usersResponse} = await authClient.POST("/users/batch", {
-        body: { uuids: ids }
+        body: { usernames: usernames }
     })
 
 
@@ -42,6 +40,12 @@ const usersDataQuery = query(async () => {
         const err = await usersResponse.text();
         throw new Error(`Failed to fetch users data: ${err}`);
     }
+
+    // Add username to each user object for navigation
+    usersData = usersData.map((user, index) => ({
+        ...user,
+        username: usernames[index]
+    }));
 
     const permissionIds = usersData.map((user) => user.permissions).flat();
 
@@ -81,6 +85,7 @@ const columns: Column<{
             label: "Name",
             filterable: true,
             sortable: true,
+   
         },
         {
             key: "id",
@@ -114,10 +119,14 @@ const columns: Column<{
     ];
 
 export default function Users() {
-
+    const navigate = useNavigate();
     const users = createAsync(() => usersDataQuery());
+    
     const handleRowClick = (user: any) => {
         console.log("Clicked user:", user);
+        if (user.name) {
+            navigate(`/users/${user.name}`);
+        }
     };
 
     return (

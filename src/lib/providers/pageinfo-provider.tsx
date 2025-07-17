@@ -4,7 +4,9 @@ import { useLocation } from "@solidjs/router";
 
 interface PageinfoProviderState {
     pageDesc: Accessor<string>,
-    setUseTitleForDesc: (set: boolean) => void
+    setUsePathForDesc: (set: boolean) => void,
+    setPageDesc: (desc: string) => void,
+    refreshPageInfo: () => void
 }
 
 const PageinfoContext = createContext<PageinfoProviderState>();
@@ -17,29 +19,43 @@ export interface PageinfoProviderProps {
 
 export default function PageinfoProvider(props: PageinfoProviderProps) {
     const [pageDesc, setPageDesc] = createSignal(props.initialDesc);
-    const [useTitleForDesc, setUseTitleForDesc] = createSignal(props.useTitleForDesc);
+    const [usePathForDesc, setUsePathForDesc] = createSignal(props.useTitleForDesc);
     const location = useLocation();
 
     // Effect that runs on navigation changes
     createEffect(() => {
         // location.pathname will trigger this effect when navigation occurs
         const currentPath = location.pathname;
-        //console.log("Navigation occurred to:", currentPath);
-        
-        if (useTitleForDesc()) {
-            setPageDesc(document.title);
+        console.log("Navigation occurred to:", currentPath);
+
+        // Always reset to initial desc on navigation, then conditionally update
+
+        if (usePathForDesc()) {
+            setPageDesc(currentPath);
         }
     });
 
     onMount(() => {
-        if (useTitleForDesc()) {
-            setPageDesc(document.title)
+
+        const currentPath = location.pathname;
+        if (usePathForDesc()) {
+            setPageDesc(currentPath)
         }
     })
 
+    const refreshPageInfo = () => {
+        if (usePathForDesc()) {
+            setPageDesc(document.title);
+        } else {
+            setPageDesc(props.initialDesc);
+        }
+    };
+
     const providerValue = {
         pageDesc: pageDesc,
-        setUseTitleForDesc: (set: boolean) => setUseTitleForDesc(set)
+        setUsePathForDesc: (set: boolean) => setUsePathForDesc(set),
+        setPageDesc: (desc: string) => setPageDesc(desc),
+        refreshPageInfo: refreshPageInfo
     };
 
     return (

@@ -280,7 +280,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/{uuid}": {
+    "/users/{username}": {
         parameters: {
             query?: never;
             header?: never;
@@ -292,7 +292,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    uuid: string;
+                    username: string;
                 };
                 cookie?: never;
             };
@@ -321,7 +321,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    uuid: string;
+                    username: string;
                 };
                 cookie?: never;
             };
@@ -344,7 +344,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    uuid: string;
+                    username: string;
                 };
                 cookie?: never;
             };
@@ -446,7 +446,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/{uuid}/password": {
+    "/users/{username}/password": {
         parameters: {
             query?: never;
             header?: never;
@@ -464,7 +464,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    uuid: string;
+                    username: string;
                 };
                 cookie?: never;
             };
@@ -502,7 +502,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/users/{uuid}/permissions": {
+    "/users/{username}/permissions": {
         parameters: {
             query?: never;
             header?: never;
@@ -516,7 +516,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    uuid: string;
+                    username: string;
                 };
                 cookie?: never;
             };
@@ -541,7 +541,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    uuid: string;
+                    username: string;
                 };
                 cookie?: never;
             };
@@ -795,7 +795,7 @@ export interface components {
         };
         /** BatchUsersRequest */
         BatchUsersRequest: {
-            uuids: string[];
+            usernames: string[];
         };
         /** LoginRequest */
         LoginRequest: {
