@@ -1,12 +1,16 @@
 import { Title } from "@solidjs/meta";
 import DataTable from "~/components/ui/data-table";
-import { createResource, ErrorBoundary, Show, Suspense, createSignal, For } from "solid-js";
+import { createResource, ErrorBoundary, Show, Suspense, createSignal, For, Switch, Match } from "solid-js";
 import { authClient } from "~/lib/client";
 import { A, createAsync, query, RouteDefinition, useNavigate } from "@solidjs/router";
 import type { Column } from "~/components/ui/data-table";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { useSession } from "~/lib/session";
+import { components } from "~/lib/.api/auth-client";
+import { Badge } from "~/components/ui/badge";
+
+type UserStatus = components["schemas"]["UserStatusEnum"];
 
 const usersDataQuery = query(async () => {
     "use server";
@@ -31,7 +35,7 @@ const usersDataQuery = query(async () => {
     }
 
 
-    let { data: usersData, response : usersResponse} = await authClient.POST("/users/batch", {
+    let { data: usersData, response: usersResponse } = await authClient.POST("/users/batch", {
         body: { usernames: usernames }
     })
 
@@ -79,13 +83,14 @@ const columns: Column<{
     id: string;
     name: string;
     permissions?: string[];
+    status: UserStatus;
 }>[] = [
         {
             key: "name",
             label: "Name",
             filterable: true,
             sortable: true,
-   
+
         },
         {
             key: "id",
@@ -116,12 +121,36 @@ const columns: Column<{
                 </div>
             ),
         },
+        {
+            key: "status",
+            "label": "Status",
+            filterable: true,
+            sortable: true,
+            render: (value: UserStatus) => (
+                <>
+                    <Switch
+                        fallback={<span class="text-error">Unknown</span>}>
+                        <Match when={value == "Inactive"}>
+                            <Badge variant={"default"}>Inactive</Badge>
+                        </Match>
+                        <Match when={value == "Active"}>
+                            <Badge variant={"success"}>Active</Badge>
+                        </Match>
+                
+                        <Match when={value == "Banned"}>
+                            <Badge variant={"error"}>Banned</Badge>
+                        </Match>
+                    </Switch>
+                </>
+            )
+
+        }
     ];
 
 export default function Users() {
     const navigate = useNavigate();
     const users = createAsync(() => usersDataQuery());
-    
+
     const handleRowClick = (user: any) => {
         console.log("Clicked user:", user);
         if (user.name) {

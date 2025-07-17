@@ -5,7 +5,11 @@ import { authClient } from "~/lib/client";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
+import { Badge } from "~/components/ui/badge";
 import { usePageinfo } from "~/lib/providers/pageinfo-provider";
+import { components } from "~/lib/.api/auth-client";
+
+type UserStatus = components["schemas"]["UserStatusEnum"];
 
 interface Permission {
     id: string;
@@ -17,6 +21,7 @@ interface User {
     id: string;
     name: string;
     permissions: string[];
+    status: UserStatus;
     permissionDetails?: Permission[];
 }
 
@@ -68,16 +73,19 @@ const userQuery = query(async (username: string): Promise<User | null> => {
 const deleteUserAction = action(async (username: string) => {
     "use server";
 
-    // Since we don't have a specific DELETE endpoint, we'll simulate it
-    // In a real app, this would be a proper DELETE endpoint
-    const { data, response, error } = await authClient.GET("/me", {
+    const { data, response, error } = await authClient.DELETE("/users/{username}", {
         headers: {
             "Content-Type": "application/json"
+        },
+        params: {
+            path: {
+                username: username
+            }
         }
     });
 
     if (!response.ok || error) {
-        throw new Error(`Failed to delete user: Feature not implemented yet`);
+        throw new Error(`Failed to delete user: ${error}`);
     }
 
     return { success: true };
@@ -190,25 +198,40 @@ export default function User() {
                                     </div>
 
                                     <Card class="overflow-hidden mb-6">
-                                        <div class="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-                                            <div class="flex items-center gap-4">
-                                                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                                                    {userData.name.charAt(0).toUpperCase()}
+                                        <div class="p-6 border-b bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 dark:bg-gradient-to-r dark:from-slate-800 dark:via-slate-700 dark:to-slate-600">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-4">
+                                                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 dark:from-emerald-400 dark:to-teal-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                                                        {userData.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                                                            {userData.name}
+                                                        </h1>
+                                                        <p class="text-lg text-gray-600 dark:text-gray-300">
+                                                            @{params.username}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h1 class="text-3xl font-bold text-gray-900">
-                                                        {userData.name}
-                                                    </h1>
-                                                    <p class="text-lg text-gray-600">
-                                                        @{params.username}
-                                                    </p>
+                                                <div class="flex flex-col items-end gap-2">
+                                                    <Badge 
+                                                        variant={
+                                                            userData.status === "Active" ? "success" : 
+                                                            userData.status === "Inactive" ? "default" : 
+                                                            userData.status === "Banned" ? "error" : 
+                                                            "default"
+                                                        }
+                                                        class="text-sm px-3 py-1"
+                                                    >
+                                                        {userData.status || "Unknown"}
+                                                    </Badge>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div class="p-6">
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {/* Basic Information */}
+                                      
                                                 <div class="space-y-4">
                                                     <h3 class="text-lg font-semibold  border-b pb-2">
                                                         Basic Information

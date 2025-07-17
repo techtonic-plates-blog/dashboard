@@ -59,7 +59,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json; charset=utf-8": components["schemas"]["Model"];
+                        "application/json; charset=utf-8": components["schemas"]["Posts"];
                     };
                 };
                 404: {
@@ -236,7 +236,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json; charset=utf-8": components["schemas"]["Model"][];
+                        "application/json; charset=utf-8": components["schemas"]["Posts"][];
                     };
                 };
             };
@@ -264,8 +264,16 @@ export interface components {
             body: string;
             subheading: string;
         };
-        /** Model */
-        Model: {
+        /** PatchPostRequest */
+        PatchPostRequest: {
+            title?: string;
+            author?: string;
+            body?: string;
+            subheading?: string;
+            status?: components["schemas"]["PostsStatusEnum"];
+        };
+        /** Posts */
+        Posts: {
             /** Format: uuid */
             id: string;
             slug: string;
@@ -279,14 +287,10 @@ export interface components {
             subheading: string;
             /** Format: naive-date-time */
             last_edit?: string;
+            post_status: components["schemas"]["PostsStatusEnum"];
         };
-        /** PatchPostRequest */
-        PatchPostRequest: {
-            title?: string;
-            author?: string;
-            body?: string;
-            subheading?: string;
-        };
+        /** @enum {string} */
+        PostsStatusEnum: "Draft" | "Published" | "Archived" | "Removed";
     };
     responses: never;
     parameters: never;

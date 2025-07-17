@@ -1,14 +1,24 @@
 import { Title } from "@solidjs/meta";
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, For } from "solid-js";
 import { TextField, TextFieldInput, TextFieldLabel, TextFieldTextArea, TextFieldErrorMessage } from "~/components/ui/text-field";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectHiddenSelect, SelectLabel } from "~/components/ui/select";
+import { Badge } from "~/components/ui/badge";
 import { postsClient } from "~/lib/client";
 import { A, useNavigate, action, useSubmission, redirect, createAsync, query, RouteDefinition, useParams } from "@solidjs/router";
 import { components } from "$api/posts-client";
 
 type PatchPostRequest = components["schemas"]["PatchPostRequest"];
-type Model = components["schemas"]["Model"];
+type PostStatus = components["schemas"]["PostsStatusEnum"];
+
+const statusOptions: { value: PostStatus; label: string; variant: "default" | "success" | "secondary" | "error" }[] = [
+    { value: "Draft", label: "Draft", variant: "default" },
+    { value: "Published", label: "Published", variant: "success" },
+    { value: "Archived", label: "Archived", variant: "secondary" },
+    { value: "Removed", label: "Removed", variant: "error" }
+];
+
 
 // Query to fetch the current post data
 const postQuery = query(async (slug: string) => {
@@ -44,6 +54,7 @@ const updatePost = action(async (formData: FormData) => {
     const author = formData.get("author") as string;
     const body = formData.get("body") as string;
     const subheading = formData.get("subheading") as string;
+    const post_status = formData.get("post_status") as PostStatus;
 
     const errors: Record<string, string> = {};
 
@@ -59,6 +70,9 @@ const updatePost = action(async (formData: FormData) => {
     if (!subheading?.trim()) {
         errors.subheading = "Subheading is required";
     }
+    if (!post_status) {
+        errors.post_status = "Status is required";
+    }
 
     if (Object.keys(errors).length > 0) {
         return { success: false, errors };
@@ -73,7 +87,8 @@ const updatePost = action(async (formData: FormData) => {
                 title: title.trim(),
                 author: author.trim(),
                 body: body.trim(),
-                subheading: subheading.trim()
+                subheading: subheading.trim(),
+                post_status
             },
             headers: {
                 "Content-Type": "application/json"
@@ -111,11 +126,12 @@ export default function EditPost() {
     const post = createAsync(() => postQuery(params.slug));
 
     // Form state for controlled inputs - initialize with post data when available
-    const [formData, setFormData] = createSignal<PatchPostRequest>({
+    const [formData, setFormData] = createSignal<PatchPostRequest & { post_status?: PostStatus }>({
         title: "",
         author: "",
         body: "",
-        subheading: ""
+        subheading: "",
+        post_status: "Draft"
     });
 
     // Update form data when post loads
@@ -130,7 +146,8 @@ export default function EditPost() {
                 title: data.title,
                 author: data.author,
                 body: data.body,
-                subheading: data.subheading
+                subheading: data.subheading,
+                post_status: data.post_status
             });
         }
     };
@@ -222,6 +239,14 @@ export default function EditPost() {
                                                     {data.created_by}
                                                 </code>
                                             </div>
+                                            <div>
+                                                <span class="font-medium">Status:</span>
+                                                <span class="ml-2">
+                                                    <Badge variant={statusOptions.find(s => s.value === data.post_status)?.variant || "default"}>
+                                                        {data.post_status}
+                                                    </Badge>
+                                                </span>
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -263,7 +288,6 @@ export default function EditPost() {
                                                 </Show>
                                             </TextField>
 
-                                            {/* Subheading Field */}
                                             <TextField validationState={errors().subheading ? "invalid" : "valid"}>
                                                 <TextFieldLabel>Subheading *</TextFieldLabel>
                                                 <TextFieldInput
@@ -277,6 +301,47 @@ export default function EditPost() {
                                                     <TextFieldErrorMessage>{errors().subheading}</TextFieldErrorMessage>
                                                 </Show>
                                             </TextField>
+
+                                            <div class="space-y-2">
+                                                <Select
+                                                    value={formData().post_status}
+                                                    onChange={(value: PostStatus | null) => {
+                                                        if (value) {
+                                                            setFormData(prev => ({ ...prev, post_status: value }));
+                                                        }
+                                                    }}
+                                                    options={statusOptions.map(option => option.value)}
+                                                    placeholder="Select status"
+                                                    itemComponent={(props) => (
+                                                        <SelectItem item={props.item}>
+                                                            <div class="flex items-center gap-2">
+                                                                <Badge variant={statusOptions.find(s => s.value === props.item.rawValue)?.variant || "default"}>
+                                                                    {props.item.rawValue}
+                                                                </Badge>
+                                                            </div>
+                                                        </SelectItem>
+                                                    )}
+                                                    disabled={submission.pending}
+                                                >
+                                                    <SelectLabel>Status *</SelectLabel>
+                                                    <SelectTrigger aria-label="Status" class="w-full">
+                                                        <SelectValue<PostStatus>>
+                                                            {(state) => (
+                                                                <div class="flex items-center gap-2">
+                                                                    <Badge variant={statusOptions.find(s => s.value === state.selectedOption())?.variant || "default"}>
+                                                                        {state.selectedOption()}
+                                                                    </Badge>
+                                                                </div>
+                                                            )}
+                                                        </SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent />
+                                                    <SelectHiddenSelect name="post_status" />
+                                                </Select>
+                                                <Show when={errors().post_status}>
+                                                    <p class="text-sm text-red-600">{errors().post_status}</p>
+                                                </Show>
+                                            </div>
 
                                             {/* Body Field */}
                                             <TextField validationState={errors().body ? "invalid" : "valid"}>

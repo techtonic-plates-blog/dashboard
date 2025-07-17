@@ -1,10 +1,14 @@
 import { Title } from "@solidjs/meta";
 import DataTable from "~/components/ui/data-table";
-import { createResource, ErrorBoundary, Show, Suspense } from "solid-js";
+import { createResource, ErrorBoundary, Match, Show, Suspense, Switch } from "solid-js";
 import { postsClient } from "~/lib/client";
 import { A, createAsync, query, RouteDefinition } from "@solidjs/router";
 import type { Column } from "~/components/ui/data-table";
 import { Button } from "~/components/ui/button";
+import { components } from "~/lib/.api/posts-client";
+import { Badge } from "~/components/ui/badge";
+
+type PostStatus = components["schemas"]["PostsStatusEnum"];
 
 const postsDataQuery = query(async () => {
     "use server";
@@ -30,7 +34,7 @@ const postsDataQuery = query(async () => {
         const err = await response.text();
         throw new Error(`Failed to fetch posts data: ${err}`);
     }
-   
+
     return data;
 }, "postsDataQuery")
 
@@ -50,6 +54,7 @@ const columns: Column<{
     created_by: string;
     subheading: string;
     last_edit?: string;
+    post_status: PostStatus;
 }>[] = [
         {
             key: "title",
@@ -75,6 +80,31 @@ const columns: Column<{
             filterable: true,
             sortable: true,
         },
+        {
+            key: "post_status",
+            label: "Status",
+            filterable: true,
+            sortable: true,
+            render: (value: PostStatus) => (
+                <>
+                    <Switch
+                        fallback={<span class="text-error">Unknown</span>}>
+                        <Match when={value == "Draft"}>
+                            <Badge variant={"default"}>Draft</Badge>
+                        </Match>
+                        <Match when={value == "Published"}>
+                            <Badge variant={"success"}>Published</Badge>
+                        </Match>
+                        <Match when={value == "Archived"}>
+                            <Badge variant={"secondary"}>Archived</Badge>
+                        </Match>
+                        <Match when={value == "Removed"}>
+                            <Badge variant={"error"}>Removed</Badge>
+                        </Match>
+                    </Switch>
+                </>
+            )
+        }
     ];
 
 export default function Posts() {

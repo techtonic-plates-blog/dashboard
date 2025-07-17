@@ -303,7 +303,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json; charset=utf-8": components["schemas"]["UserWithPermissions"];
+                        "application/json; charset=utf-8": components["schemas"]["UserDetails"];
                     };
                 };
                 404: {
@@ -350,11 +350,35 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json; charset=utf-8": components["schemas"]["UpdateUserRequest"];
+                    "application/json; charset=utf-8": components["schemas"]["ComprehensiveUpdateUserRequest"];
                 };
             };
             responses: {
                 200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -593,7 +617,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json; charset=utf-8": components["schemas"]["UserWithPermissions"][];
+                        "application/json; charset=utf-8": components["schemas"]["UserDetails"][];
                     };
                 };
             };
@@ -797,6 +821,13 @@ export interface components {
         BatchUsersRequest: {
             usernames: string[];
         };
+        /** ComprehensiveUpdateUserRequest */
+        ComprehensiveUpdateUserRequest: {
+            name?: string;
+            password?: string;
+            permissions?: string[];
+            status?: components["schemas"]["UserStatusEnum"];
+        };
         /** LoginRequest */
         LoginRequest: {
             username: string;
@@ -849,21 +880,20 @@ export interface components {
         UpdatePasswordRequest: {
             new_password: string;
         };
-        /** UpdateUserRequest */
-        UpdateUserRequest: {
-            name?: string;
-        };
         /** UpdateUsernameRequest */
         UpdateUsernameRequest: {
             new_username: string;
         };
-        /** UserWithPermissions */
-        UserWithPermissions: {
+        /** UserDetails */
+        UserDetails: {
             /** Format: uuid */
             id: string;
             name: string;
             permissions: string[];
+            status: components["schemas"]["UserStatusEnum"];
         };
+        /** @enum {string} */
+        UserStatusEnum: "Active" | "Inactive" | "Banned";
     };
     responses: never;
     parameters: never;

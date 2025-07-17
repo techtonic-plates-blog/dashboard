@@ -5,9 +5,23 @@ import { createResource, ErrorBoundary, Show, Suspense, createSignal } from "sol
 import { postsClient } from "~/lib/client";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
 import { NodeCompiler } from "@myriaddreamin/typst-ts-node-compiler";
+import { components } from "$api/posts-client";
 import "~/components/styles/typst-scoped.css";
+
+type PostStatus = components["schemas"]["PostsStatusEnum"];
+
+const getStatusVariant = (status: PostStatus): "default" | "success" | "secondary" | "error" => {
+    switch (status) {
+        case "Draft": return "default";
+        case "Published": return "success";
+        case "Archived": return "secondary";
+        case "Removed": return "error";
+        default: return "default";
+    }
+};
 
 const postQuery = query(async (slug: string) => {
     "use server";
@@ -191,6 +205,12 @@ export default function Post() {
                                                 <div class="flex items-center gap-1">
                                                     <span class="font-medium">Author:</span>
                                                     <span>{postData.author}</span>
+                                                </div>
+                                                <div class="flex items-center gap-1">
+                                                    <span class="font-medium">Status:</span>
+                                                    <Badge variant={getStatusVariant(postData.post_status)}>
+                                                        {postData.post_status}
+                                                    </Badge>
                                                 </div>
                                                 <div class="flex items-center gap-1">
                                                     <span class="font-medium">Created:</span>
