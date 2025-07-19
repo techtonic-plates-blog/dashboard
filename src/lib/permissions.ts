@@ -30,7 +30,10 @@ export const PERMISSIONS = {
   // Permission management permissions
   CREATE_PERMISSION: 'create permission',
   DELETE_PERMISSION: 'delete permission',
-  ASSIGN_PERMISSION: 'assign permission'
+  ASSIGN_PERMISSION: 'assign permission',
+  
+  ADD_ASSET: 'add asset',
+  DELETE_ASSET: 'delete asset'
 } as const;
 
 // Helper functions for checking groups of related permissions
@@ -56,5 +59,12 @@ export function hasAnyPermissionManagementPermission(user: User | null): boolean
     PERMISSIONS.CREATE_PERMISSION,
     PERMISSIONS.DELETE_PERMISSION,
     PERMISSIONS.ASSIGN_PERMISSION
+  ]);
+}
+
+export function hasAnyAssetPermission(user: User | null): boolean {
+  return hasAnyPermission(user, [
+    PERMISSIONS.ADD_ASSET,
+    PERMISSIONS.DELETE_ASSET
   ]);
 }

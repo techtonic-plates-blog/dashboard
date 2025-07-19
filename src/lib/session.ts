@@ -31,24 +31,44 @@ export async function useSession(): Promise<ReturnType<typeof useSessionBase<Ses
 
 // Helper functions for better session management
 export async function setUserSession(user: User, tokens: { jwt: string; refresher: string; jwtExp: number; refresherExp: number }) {
-    const session = await useSession();
-    const now = Date.now();
-    
-    await session.update((data) => ({
-        ...data,
-        user,
-        tokens,
-        loginAt: now,
-        lastActivity: now,
-    }));
+    try {
+        const session = await useSession();
+        const now = Date.now();
+        
+        await session.update((data) => ({
+            ...data,
+            user,
+            tokens,
+            loginAt: now,
+            lastActivity: now,
+        }));
+    } catch (error) {
+        console.error("Error setting user session:", error);
+        throw error;
+    }
 }
 
 export async function updateUserActivity() {
-    const session = await useSession();
-    await session.update((data) => ({
-        ...data,
-        lastActivity: Date.now(),
-    }));
+    try {
+        const session = await useSession();
+        const data = session.data;
+        
+        // Only update if enough time has passed to avoid excessive updates
+        const now = Date.now();
+        const minUpdateInterval = 60 * 1000; // 1 minute
+        
+        if (data?.lastActivity && (now - data.lastActivity) < minUpdateInterval) {
+            return; // Skip update if last activity was recent
+        }
+        
+        await session.update((sessionData) => ({
+            ...sessionData,
+            lastActivity: now,
+        }));
+    } catch (error) {
+        // Don't throw on activity update errors to avoid breaking the flow
+        console.warn("Could not update user activity:", error);
+    }
 }
 
 export async function isSessionValid(): Promise<boolean> {
@@ -75,8 +95,13 @@ export async function isSessionValid(): Promise<boolean> {
 }
 
 export async function clearUserSession() {
-    const session = await useSession();
-    await session.clear();
+    try {
+        const session = await useSession();
+        await session.clear();
+    } catch (error) {
+        console.warn("Could not clear user session:", error);
+        // Don't throw - this might be called during redirects
+    }
 }
 
 export async function getJwtToken(): Promise<string | null> {
@@ -121,19 +146,24 @@ export async function refreshJwtToken(): Promise<boolean> {
         
         // Update session with new tokens
         const tokens = data as any; // Type this based on your Tokens type
-        await session.update((currentData) => ({
-            ...currentData,
-            tokens: {
-                jwt: tokens.jwt.token,
-                refresher: tokens.refresher.token,
-                jwtExp: tokens.jwt.exp,
-                refresherExp: tokens.refresher.exp,
-            },
-            lastActivity: Date.now(),
-        }));
-        
-        console.log("JWT token refreshed successfully");
-        return true;
+        try {
+            await session.update((currentData) => ({
+                ...currentData,
+                tokens: {
+                    jwt: tokens.jwt.token,
+                    refresher: tokens.refresher.token,
+                    jwtExp: tokens.jwt.exp,
+                    refresherExp: tokens.refresher.exp,
+                },
+                lastActivity: Date.now(),
+            }));
+            
+            console.log("JWT token refreshed successfully");
+            return true;
+        } catch (sessionError) {
+            console.error("Failed to update session with new tokens:", sessionError);
+            return false;
+        }
     } catch (error) {
         console.error("Error refreshing JWT token:", error);
         return false;

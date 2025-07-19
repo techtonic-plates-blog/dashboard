@@ -1,6 +1,6 @@
 
 
-import { Brain, Camera, Database, File, FileText, Film, HelpCircle, LayoutDashboard, Pencil, Search, Settings, Text, UserIcon } from "lucide-solid"
+import { Brain, Camera, Database, File, FileIcon, FileText, Film, HelpCircle, LayoutDashboard, Pencil, Search, Settings, Text, UserIcon } from "lucide-solid"
 import { Accessor, ComponentProps, JSX, Show } from "solid-js"
 
 import {
@@ -41,6 +41,11 @@ const navItems = {
       href: "/users",
       icon: <UserIcon></UserIcon>,
       customPermissionCheck: hasAnyUserPermission // Show if user has any user-related permission
+    },
+    {
+      title: "Assets",
+      href: "/assets",
+      icon: <FileIcon></FileIcon>
     }
   ]
 }

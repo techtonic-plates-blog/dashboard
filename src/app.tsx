@@ -26,7 +26,7 @@ function RootLayout(props: ParentProps) {
       <ColorModeProvider storageManager={storageManager}>
         <Suspense fallback={<div>Loading application...</div>}>
           <AuthProvider>
-            <Suspense fallback={<div>Authenticating...</div>}>
+            <Suspense >
               <PageinfoProvider useTitleForDesc={true} initialDesc="Home">
                 {props.children}
               </PageinfoProvider>

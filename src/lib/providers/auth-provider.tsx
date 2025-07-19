@@ -1,10 +1,10 @@
-import { createContext, useContext, createSignal, createEffect, JSX } from "solid-js";
+import { createContext, useContext, createSignal, createEffect, JSX, Show, Suspense } from "solid-js";
 import { createStore } from "solid-js/store";
-import { action, query, useAction } from "@solidjs/router";
+import { action, createAsync, query, redirect, useAction } from "@solidjs/router";
 import { getRequestEvent } from "solid-js/web";
 import { authClient } from "../client";
 import { components } from "$api/auth-client";
-import { useSession, setUserSession, isSessionValid, clearUserSession, updateUserActivity } from "../session";
+import { useSession, setUserSession, isSessionValid, clearUserSession, updateUserActivity, refreshJwtToken } from "../session";
 
 export type User = components["schemas"]["MeInfo"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
@@ -20,8 +20,8 @@ const loginAction = action(async (formData: FormData) => {
         const { data, error, response } = await authClient.POST("/auth/login", {
             body: { username, password },
         });
-       // console.log(data);
-     //   console.log(error)
+        // console.log(data);
+        //   console.log(error)
         if (!error && data) {
             //console.log("here")
             const tokens = data as Tokens;
@@ -32,7 +32,7 @@ const loginAction = action(async (formData: FormData) => {
                     Authorization: `Bearer ${tokens.jwt.token}`
                 }
             });
-           // console.log(userResponse)
+            // console.log(userResponse)
             if (!userResponse.error && userResponse.data) {
                 console.log("here2")
                 const user = userResponse.data as User;
@@ -61,31 +61,36 @@ const loginAction = action(async (formData: FormData) => {
 
 
 
-const getCurrentUserQuery = query(async () => {
+export const getCurrentUserQuery = query(async () => {
     "use server";
     try {
-        // Check if session is valid
-        const sessionValid = await isSessionValid();
-        if (!sessionValid) {
-            await clearUserSession();
-            return { success: false, user: null };
-        }
+        // Check if session is valid first
 
-        // Update activity timestamp
-        await updateUserActivity();
-
-        // Get user from session
         const session = await useSession();
         const sessionData = session.data;
+        
+        const sessionValid = await isSessionValid();
 
-        if (sessionData?.user) {
+        if (!sessionValid) {
+            let res = await refreshJwtToken();
+            if (!res)
+                throw redirect("/login");
+
             return { success: true, user: sessionData.user };
         }
 
-        return { success: false, user: null };
+        // Get user from session
+
+        if (sessionData?.user) {
+            // Update activity timestamp (this is now safe and throttled)
+            await updateUserActivity();
+            return { success: true, user: sessionData.user };
+        }
+
+        throw redirect("/login");
     } catch (err) {
         console.error("Failed to get current user:", err);
-        return { success: false, user: null };
+        throw redirect("/login");
     }
 }, "getCurrentUser");
 
@@ -128,12 +133,13 @@ export function AuthProvider(props: { children: JSX.Element }) {
     const loginActionFn = useAction(loginAction);
     const logoutActionFn = useAction(logoutAction);
 
+    const currentUserQuery = createAsync(() => getCurrentUserQuery());
+
     // Check for existing session on mount
     createEffect(async () => {
         try {
-            const result = await getCurrentUserQuery();
-
-            if (result.success && result.user) {
+            let result = currentUserQuery();
+            if (result && result.user) {
                 setState({
                     user: result.user,
                     isAuthenticated: true,
@@ -228,6 +234,7 @@ export function AuthProvider(props: { children: JSX.Element }) {
     return (
         <AuthContext.Provider value={contextValue}>
             {props.children}
+
         </AuthContext.Provider>
     );
 }

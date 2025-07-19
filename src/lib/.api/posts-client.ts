@@ -156,6 +156,7 @@ export interface paths {
                     author?: string;
                     add_count?: boolean;
                     creation_time?: string;
+                    status?: components["schemas"]["PostsStatusEnum"];
                 };
                 header?: never;
                 path?: never;

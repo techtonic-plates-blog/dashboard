@@ -399,7 +399,10 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    status?: components["schemas"]["UserStatusEnum"];
+                    permissions?: string[];
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
