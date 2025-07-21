@@ -1,14 +1,45 @@
 import { Title } from "@solidjs/meta";
 import DataTable from "~/components/ui/data-table";
-import { createResource, ErrorBoundary, Match, Show, Suspense, Switch } from "solid-js";
+import { createResource, ErrorBoundary, Match, Show, Suspense, Switch, createSignal } from "solid-js";
 import { postsClient } from "~/lib/client";
 import { A, createAsync, query, RouteDefinition } from "@solidjs/router";
 import type { Column } from "~/components/ui/data-table";
 import { Button } from "~/components/ui/button";
 import { components } from "~/lib/.api/posts-client";
 import { Badge } from "~/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
+import { Eye } from "lucide-solid";
+import { TypstPreview } from "~/components/typst-preview";
 
 type PostStatus = components["schemas"]["PostsStatusEnum"];
+
+// Preview component for individual posts
+function PostPreview(props: { post: any }) {
+    const [isOpen, setIsOpen] = createSignal(false);
+
+    return (
+        <Dialog open={isOpen()} onOpenChange={setIsOpen}>
+            <DialogTrigger as={Button} size="sm" variant="outline" class="gap-2">
+                <Eye class="w-3 h-3" />
+                Preview
+            </DialogTrigger>
+            <DialogContent class="max-w-4xl max-h-[90vh] overflow-hidden">
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2">
+                        <Eye class="h-5 w-5" />
+                        {props.post.title}
+                    </DialogTitle>
+                </DialogHeader>
+                <div class="mt-4 max-h-[70vh] overflow-y-auto">
+                    <TypstPreview 
+                        content={props.post.body}
+                        class="border-0 shadow-none"
+                    />
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 const postsDataQuery = query(async () => {
     "use server";
@@ -104,6 +135,21 @@ const columns: Column<{
                     </Switch>
                 </>
             )
+        },
+        {
+            key: "id",
+            label: "Actions",
+            render: (value: string, row: any) => (
+                <div class="flex items-center gap-2">
+                    <PostPreview post={row} />
+                    <Button size="sm" variant="ghost" class="gap-2">
+                        <A href={`/posts/${row.slug}`} class="flex items-center gap-2">
+                            View
+                        </A>
+                    </Button>
+                </div>
+            ),
+            priority: 1
         }
     ];
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { postsClient } from "~/lib/client";
 import { A, useNavigate, action, useSubmission, redirect } from "@solidjs/router";
 import { components } from "$api/posts-client";
+import { TypstPreview } from "~/components/typst-preview";
 
 type InsertPostRequest = components["schemas"]["InsertPostRequest"];
 
@@ -157,21 +158,40 @@ export default function NewPost() {
                         </TextField>
 
                         {/* Body Field */}
-                        <TextField validationState={errors().body ? "invalid" : "valid"}>
-                            <TextFieldLabel>Body *</TextFieldLabel>
-                            <TextFieldTextArea
-                                name="body"
-                                value={formData().body}
-                                onInput={(e) => updateFormData("body")(e.currentTarget.value)}
-                                placeholder="Enter post content"
-                                disabled={submission.pending}
-                                rows={10}
-                                class="min-h-[200px] resize-y"
-                            />
-                            <Show when={errors().body}>
-                                <TextFieldErrorMessage>{errors().body}</TextFieldErrorMessage>
-                            </Show>
-                        </TextField>
+                        <div class="space-y-4">
+                            <TextField validationState={errors().body ? "invalid" : "valid"}>
+                                <TextFieldLabel>Body *</TextFieldLabel>
+                                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <TextFieldTextArea
+                                            name="body"
+                                            value={formData().body}
+                                            onInput={(e) => updateFormData("body")(e.currentTarget.value)}
+                                            placeholder="Enter post content (Typst syntax)"
+                                            disabled={submission.pending}
+                                            rows={20}
+                                            class="min-h-[500px] resize-y font-mono text-sm"
+                                        />
+                                        <Show when={errors().body}>
+                                            <TextFieldErrorMessage>{errors().body}</TextFieldErrorMessage>
+                                        </Show>
+                                    </div>
+                                    <div class="hidden xl:block">
+                                        <TypstPreview 
+                                            content={formData().body} 
+                                            class="h-full"
+                                        />
+                                    </div>
+                                </div>
+                            </TextField>
+                            
+                            {/* Mobile preview - show below editor on smaller screens */}
+                            <div class="xl:hidden">
+                                <TypstPreview 
+                                    content={formData().body} 
+                                />
+                            </div>
+                        </div>
 
                         {/* Submit Error */}
                         <Show when={errors().submit}>
