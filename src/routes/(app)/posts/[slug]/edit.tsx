@@ -1,5 +1,5 @@
 import { Title } from "@solidjs/meta";
-import { createSignal, Show, For } from "solid-js";
+import { createSignal, Show, For, createEffect } from "solid-js";
 import { TextField, TextFieldInput, TextFieldLabel, TextFieldTextArea, TextFieldErrorMessage } from "~/components/ui/text-field";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -9,8 +9,6 @@ import { postsClient } from "~/lib/client";
 import { A, useNavigate, action, useSubmission, redirect, createAsync, query, RouteDefinition, useParams } from "@solidjs/router";
 import { components } from "$api/posts-client";
 import { TypstPreview } from "~/components/typst-preview";
-
-type PatchPostRequest = components["schemas"]["PatchPostRequest"];
 type PostStatus = components["schemas"]["PostsStatusEnum"];
 
 const statusOptions: { value: PostStatus; label: string; variant: "default" | "success" | "secondary" | "error" }[] = [
@@ -35,7 +33,7 @@ const postQuery = query(async (slug: string) => {
     });
 
     if (response.status === 404) {
-        redirect(`/posts/${slug}/not-found`, {status: 404});
+        redirect(`/posts/${slug}/not-found`, { status: 404 });
     }
 
     if (!data) {
@@ -122,40 +120,24 @@ export const route = {
 
 export default function EditPost() {
     const params = useParams();
-    const navigate = useNavigate();
     const submission = useSubmission(updatePost);
     const post = createAsync(() => postQuery(params.slug));
 
-    // Form state for controlled inputs - initialize with post data when available
-    const [formData, setFormData] = createSignal<PatchPostRequest & { post_status?: PostStatus }>({
-        title: "",
-        author: "",
-        body: "",
-        subheading: "",
-        post_status: "Draft"
+    const [postBody, setPostBody] = createSignal<undefined | string>(undefined);
+    const [selectedStatus, setSelectedStatus] = createSignal<PostStatus | undefined>();
+
+    createEffect(() => {
+        let p = post();
+        if (p && p.body && postBody() === undefined) {
+            setPostBody(p.body);
+        }
+        if (p && p.post_status && selectedStatus() === undefined) {
+            setSelectedStatus(p.post_status);
+        }
     });
 
-    // Update form data when post loads
-    const postData = () => post();
-    const isLoaded = () => !!postData();
 
-    // Initialize form data once post is loaded
-    const initializeForm = () => {
-        const data = postData();
-        if (data && !formData().title) {
-            setFormData({
-                title: data.title,
-                author: data.author,
-                body: data.body,
-                subheading: data.subheading,
-                post_status: data.post_status
-            });
-        }
-    };
 
-    const updateFormData = (field: keyof (PatchPostRequest & { post_status?: PostStatus })) => (value: string | PostStatus) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
 
 
 
@@ -194,226 +176,207 @@ export default function EditPost() {
                 </div>
             </div>
 
-            <Show when={!isLoaded()}>
-                <div class="space-y-4">
-                    <div class="animate-pulse bg-gray-200 h-8 w-1/3 rounded"></div>
-                    <div class="animate-pulse bg-gray-200 h-64 w-full rounded"></div>
-                </div>
-            </Show>
 
-            <Show when={isLoaded()}>
-                <div>
-                    {(() => {
-                        initializeForm(); // Initialize form data when post loads
-                        const data = postData()!;
+            <Show when={post()}>
+                {(data) => <>
 
-                        return (
-                            <>
-                                {/* Post metadata display */}
-                                <Card class="mb-6">
-                                    <CardHeader>
-                                        <CardTitle>Post Information</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                                            <div>
-                                                <span class="font-medium">Post ID:</span>
-                                                <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
-                                                    {data.id}
-                                                </code>
-                                            </div>
-                                            <div>
-                                                <span class="font-medium">Slug:</span>
-                                                <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
-                                                    {data.slug}
-                                                </code>
-                                            </div>
-                                            <div>
-                                                <span class="font-medium">Created:</span>
-                                                <span class="ml-2">{formatDate(data.creation_time)}</span>
-                                            </div>
-                                            {data.last_edit && (
-                                                <div>
-                                                    <span class="font-medium">Last edited:</span>
-                                                    <span class="ml-2">{formatDate(data.last_edit)}</span>
-                                                </div>
-                                            )}
-                                            <div>
-                                                <span class="font-medium">Created by:</span>
-                                                <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
-                                                    {data.created_by}
-                                                </code>
-                                            </div>
-                                            <div>
-                                                <span class="font-medium">Status:</span>
-                                                <span class="ml-2">
-                                                    <Badge variant={statusOptions.find(s => s.value === data.post_status)?.variant || "default"}>
-                                                        {data.post_status}
+                    {/* Post metadata display */}
+                    <Card class="mb-6">
+                        <CardHeader>
+                            <CardTitle>Post Information</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                                <div>
+                                    <span class="font-medium">Post ID:</span>
+                                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                                        {data().id}
+                                    </code>
+                                </div>
+                                <div>
+                                    <span class="font-medium">Slug:</span>
+                                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                                        {data().slug}
+                                    </code>
+                                </div>
+                                <div>
+                                    <span class="font-medium">Created:</span>
+                                    <span class="ml-2">{formatDate(data().creation_time)}</span>
+                                </div>
+                                <Show when={data().last_edit}>
+                                    {(last_edit) => <div>
+                                        <span class="font-medium">Last edited:</span>
+                                        <span class="ml-2">{formatDate(last_edit())}</span>
+                                    </div>}
+                                </Show>
+                                <div>
+                                    <span class="font-medium">Created by:</span>
+                                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                                        {data().created_by}
+                                    </code>
+                                </div>
+                                <div>
+                                    <span class="font-medium">Status:</span>
+                                    <span class="ml-2">
+                                        <Badge variant={statusOptions.find(s => s.value === data().post_status)?.variant || "default"}>
+                                            {data().post_status}
+                                        </Badge>
+                                    </span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Edit Post Content</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <form action={updatePost} method="post" class="space-y-6">
+
+                                <input type="hidden" name="slug" value={params.slug} />
+
+                                <TextField validationState={errors().title ? "invalid" : "valid"}>
+                                    <TextFieldLabel>Title *</TextFieldLabel>
+                                    <TextFieldInput
+                                        type="text"
+                                        name="title"
+                                        value={data().title || ""}
+
+                                        placeholder="Enter post title"
+                                        disabled={submission.pending}
+                                    />
+                                    <Show when={errors().title}>
+                                        <TextFieldErrorMessage>{errors().title}</TextFieldErrorMessage>
+                                    </Show>
+                                </TextField>
+
+                                <TextField validationState={errors().author ? "invalid" : "valid"}>
+                                    <TextFieldLabel>Author *</TextFieldLabel>
+                                    <TextFieldInput
+                                        type="text"
+                                        name="author"
+                                        value={data().author || ""}
+                                        placeholder="Enter author name"
+                                        disabled={submission.pending}
+                                    />
+                                    <Show when={errors().author}>
+                                        <TextFieldErrorMessage>{errors().author}</TextFieldErrorMessage>
+                                    </Show>
+                                </TextField>
+
+                                <TextField validationState={errors().subheading ? "invalid" : "valid"}>
+                                    <TextFieldLabel>Subheading *</TextFieldLabel>
+                                    <TextFieldInput
+                                        type="text"
+                                        name="subheading"
+                                        value={data().subheading || ""}
+                                        placeholder="Enter post subheading"
+                                        disabled={submission.pending}
+                                    />
+                                    <Show when={errors().subheading}>
+                                        <TextFieldErrorMessage>{errors().subheading}</TextFieldErrorMessage>
+                                    </Show>
+                                </TextField>
+
+                                <div class="space-y-2">
+                                    <Select
+                                        value={selectedStatus()}
+                                        onChange={setSelectedStatus}
+                                        options={statusOptions.map(option => option.value)}
+                                        placeholder="Select status"
+                                        itemComponent={(props) => (
+                                            <SelectItem item={props.item}>
+                                                <div class="flex items-center gap-2">
+                                                    <Badge variant={statusOptions.find(s => s.value === props.item.rawValue)?.variant || "default"}>
+                                                        {props.item.rawValue}
                                                     </Badge>
-                                                </span>
+                                                </div>
+                                            </SelectItem>
+                                        )}
+                                        disabled={submission.pending}
+                                    >
+                                        <SelectLabel>Status *</SelectLabel>
+                                        <SelectTrigger aria-label="Status" class="w-full">
+                                            <SelectValue<PostStatus>>
+                                                {(state) => (
+                                                    <div class="flex items-center gap-2">
+                                                        <Badge variant={statusOptions.find(s => s.value === state.selectedOption())?.variant || "default"}>
+                                                            {state.selectedOption()}
+                                                        </Badge>
+                                                    </div>
+                                                )}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent />
+                                        <SelectHiddenSelect name="post_status" />
+                                    </Select>
+                                    <Show when={errors().post_status}>
+                                        <p class="text-sm text-red-600">{errors().post_status}</p>
+                                    </Show>
+                                </div>
+
+                                {/* Body Field */}
+                                <div class="space-y-4">
+                                    <TextField validationState={errors().body ? "invalid" : "valid"}>
+                                        <TextFieldLabel>Body *</TextFieldLabel>
+                                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                            <div class="space-y-2">
+                                                <TextFieldTextArea
+                                                    name="body"
+                                                    value={postBody() || ""}
+                                                    onInput={(i) => setPostBody(i.currentTarget.value)}
+                                                    placeholder="Enter post content (Typst syntax)"
+                                                    disabled={submission.pending}
+                                                    rows={20}
+                                                    class="min-h-[500px] resize-y font-mono text-sm"
+                                                />
+                                                <Show when={errors().body}>
+                                                    <TextFieldErrorMessage>{errors().body}</TextFieldErrorMessage>
+                                                </Show>
+                                            </div>
+                                            <div class="hidden xl:block">
+                                                <TypstPreview
+                                                    content={postBody() || ""}
+                                                    class="h-full"
+                                                />
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
+                                    </TextField>
 
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Edit Post Content</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <form action={updatePost} method="post" class="space-y-6">
+                                    {/* Mobile preview - show below editor on smaller screens */}
+                                    <div class="xl:hidden">
+                                        <TypstPreview
+                                            content={postBody() || ""}
+                                        />
+                                    </div>
+                                </div>
 
-                                            <input type="hidden" name="slug" value={params.slug} />
+                                {/* Submit Error */}
+                                <Show when={errors().submit}>
+                                    <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+                                        <p class="text-red-600 text-sm">{errors().submit}</p>
+                                    </div>
+                                </Show>
 
-                                            <TextField validationState={errors().title ? "invalid" : "valid"}>
-                                                <TextFieldLabel>Title *</TextFieldLabel>
-                                                <TextFieldInput
-                                                    type="text"
-                                                    name="title"
-                                                    value={formData().title || ""}
-                                                    onInput={(e) => updateFormData("title")(e.currentTarget.value)}
-                                                    placeholder="Enter post title"
-                                                    disabled={submission.pending}
-                                                />
-                                                <Show when={errors().title}>
-                                                    <TextFieldErrorMessage>{errors().title}</TextFieldErrorMessage>
-                                                </Show>
-                                            </TextField>
+                                {/* Submit Buttons */}
+                                <div class="flex justify-end space-x-4">
+                                    <Button type="button" variant="outline" disabled={submission.pending}>
+                                        <A href={`/posts/${params.slug}`}>Cancel</A>
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={submission.pending}
+                                        class="min-w-[120px]"
+                                    >
+                                        {submission.pending ? "Saving..." : "Save Changes"}
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
 
-                                            <TextField validationState={errors().author ? "invalid" : "valid"}>
-                                                <TextFieldLabel>Author *</TextFieldLabel>
-                                                <TextFieldInput
-                                                    type="text"
-                                                    name="author"
-                                                    value={formData().author || ""}
-                                                    onInput={(e) => updateFormData("author")(e.currentTarget.value)}
-                                                    placeholder="Enter author name"
-                                                    disabled={submission.pending}
-                                                />
-                                                <Show when={errors().author}>
-                                                    <TextFieldErrorMessage>{errors().author}</TextFieldErrorMessage>
-                                                </Show>
-                                            </TextField>
-
-                                            <TextField validationState={errors().subheading ? "invalid" : "valid"}>
-                                                <TextFieldLabel>Subheading *</TextFieldLabel>
-                                                <TextFieldInput
-                                                    type="text"
-                                                    name="subheading"
-                                                    value={formData().subheading || ""}
-                                                    onInput={(e) => updateFormData("subheading")(e.currentTarget.value)}
-                                                    placeholder="Enter post subheading"
-                                                    disabled={submission.pending}
-                                                />
-                                                <Show when={errors().subheading}>
-                                                    <TextFieldErrorMessage>{errors().subheading}</TextFieldErrorMessage>
-                                                </Show>
-                                            </TextField>
-
-                                            <div class="space-y-2">
-                                                <Select
-                                                    value={formData().post_status}
-                                                    onChange={(value: PostStatus | null) => {
-                                                        if (value) {
-                                                            updateFormData("post_status")(value);
-                                                        }
-                                                    }}
-                                                    options={statusOptions.map(option => option.value)}
-                                                    placeholder="Select status"
-                                                    itemComponent={(props) => (
-                                                        <SelectItem item={props.item}>
-                                                            <div class="flex items-center gap-2">
-                                                                <Badge variant={statusOptions.find(s => s.value === props.item.rawValue)?.variant || "default"}>
-                                                                    {props.item.rawValue}
-                                                                </Badge>
-                                                            </div>
-                                                        </SelectItem>
-                                                    )}
-                                                    disabled={submission.pending}
-                                                >
-                                                    <SelectLabel>Status *</SelectLabel>
-                                                    <SelectTrigger aria-label="Status" class="w-full">
-                                                        <SelectValue<PostStatus>>
-                                                            {(state) => (
-                                                                <div class="flex items-center gap-2">
-                                                                    <Badge variant={statusOptions.find(s => s.value === state.selectedOption())?.variant || "default"}>
-                                                                        {state.selectedOption()}
-                                                                    </Badge>
-                                                                </div>
-                                                            )}
-                                                        </SelectValue>
-                                                    </SelectTrigger>
-                                                    <SelectContent />
-                                                    <SelectHiddenSelect name="post_status" />
-                                                </Select>
-                                                <Show when={errors().post_status}>
-                                                    <p class="text-sm text-red-600">{errors().post_status}</p>
-                                                </Show>
-                                            </div>
-
-                                            {/* Body Field */}
-                                            <div class="space-y-4">
-                                                <TextField validationState={errors().body ? "invalid" : "valid"}>
-                                                    <TextFieldLabel>Body *</TextFieldLabel>
-                                                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                                        <div class="space-y-2">
-                                                            <TextFieldTextArea
-                                                                name="body"
-                                                                value={formData().body || ""}
-                                                                onInput={(e) => updateFormData("body")(e.currentTarget.value)}
-                                                                placeholder="Enter post content (Typst syntax)"
-                                                                disabled={submission.pending}
-                                                                rows={20}
-                                                                class="min-h-[500px] resize-y font-mono text-sm"
-                                                            />
-                                                            <Show when={errors().body}>
-                                                                <TextFieldErrorMessage>{errors().body}</TextFieldErrorMessage>
-                                                            </Show>
-                                                        </div>
-                                                        <div class="hidden xl:block">
-                                                            <TypstPreview 
-                                                                content={formData().body || ""} 
-                                                                class="h-full"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </TextField>
-                                                
-                                                {/* Mobile preview - show below editor on smaller screens */}
-                                                <div class="xl:hidden">
-                                                    <TypstPreview 
-                                                        content={formData().body || ""} 
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Submit Error */}
-                                            <Show when={errors().submit}>
-                                                <div class="p-4 bg-red-50 border border-red-200 rounded-md">
-                                                    <p class="text-red-600 text-sm">{errors().submit}</p>
-                                                </div>
-                                            </Show>
-
-                                            {/* Submit Buttons */}
-                                            <div class="flex justify-end space-x-4">
-                                                <Button type="button" variant="outline" disabled={submission.pending}>
-                                                    <A href={`/posts/${params.slug}`}>Cancel</A>
-                                                </Button>
-                                                <Button
-                                                    type="submit"
-                                                    disabled={submission.pending}
-                                                    class="min-w-[120px]"
-                                                >
-                                                    {submission.pending ? "Saving..." : "Save Changes"}
-                                                </Button>
-                                            </div>
-                                        </form>
-                                    </CardContent>
-                                </Card>
-                            </>
-                        );
-                    })()}
-                </div>
+                </>}
             </Show>
         </section>
     );

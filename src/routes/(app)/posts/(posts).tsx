@@ -2,7 +2,7 @@ import { Title } from "@solidjs/meta";
 import DataTable from "~/components/ui/data-table";
 import { createResource, ErrorBoundary, Match, Show, Suspense, Switch, createSignal } from "solid-js";
 import { postsClient } from "~/lib/client";
-import { A, createAsync, query, RouteDefinition } from "@solidjs/router";
+import { A, createAsync, query, RouteDefinition, useNavigate } from "@solidjs/router";
 import type { Column } from "~/components/ui/data-table";
 import { Button } from "~/components/ui/button";
 import { components } from "~/lib/.api/posts-client";
@@ -154,12 +154,12 @@ const columns: Column<{
     ];
 
 export default function Posts() {
-
+    let navigator = useNavigate();
     const posts = createAsync(() => postsDataQuery());
 
     const handleRowClick = (post: any) => {
         // Open post in new tab using the slug
-        window.open(`/posts/${post.slug}`, '_blank');
+        navigator(`/posts/${post.slug}`);
     };
 
     return (

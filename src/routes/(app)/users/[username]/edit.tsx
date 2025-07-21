@@ -4,7 +4,7 @@ import { TextField, TextFieldInput, TextFieldLabel, TextFieldErrorMessage } from
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Checkbox } from "~/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel, SelectErrorMessage } from "~/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel, SelectErrorMessage, SelectHiddenSelect } from "~/components/ui/select";
 import { Badge } from "~/components/ui/badge";
 import { authClient } from "~/lib/client";
 import { A, useNavigate, action, useSubmission, redirect, createAsync, query, RouteDefinition, useParams } from "@solidjs/router";
@@ -167,41 +167,29 @@ export default function EditUser() {
     const user = createAsync(() => userQuery(params.username));
     const allPermissions = createAsync(() => allPermissionsQuery());
 
-    // Form state for controlled inputs - initialize with user data when available
-    const [formData, setFormData] = createSignal<UpdateUserRequest>({
-        name: "",
-        permissions: [],
-        status: "Inactive" as UserStatus
-    });
+    // Local state for form fields
+    const [selectedStatus, setSelectedStatus] = createSignal<UserStatus | undefined>();
+    const [selectedPermissions, setSelectedPermissions] = createSignal<string[]>([]);
 
-    // Update form data when user loads
-    const userData = () => user();
-    const isLoaded = () => !!userData();
-
-    // Initialize form data once user is loaded
-    const initializeForm = () => {
-        const data = userData();
-        if (data && !formData().name) {
-            setFormData({
-                name: data.name,
-                permissions: data.permissions || [],
-                status: data.status || "Inactive"
-            });
+    // Initialize state when user data loads
+    const currentUser = () => {
+        const userData = user();
+        if (userData && !selectedStatus()) {
+            setSelectedStatus(userData.status);
+            setSelectedPermissions(userData.permissions || []);
         }
+        return userData;
     };
 
-    const updateFormData = (field: keyof UpdateUserRequest) => (value: string | string[]) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
+    // Toggle permission function
     const togglePermission = (permissionId: string) => {
-        const currentPermissions = formData().permissions;
-        const isSelected = currentPermissions.includes(permissionId);
-
+        const current = selectedPermissions();
+        const isSelected = current.includes(permissionId);
+        
         if (isSelected) {
-            updateFormData("permissions")(currentPermissions.filter(p => p !== permissionId));
+            setSelectedPermissions(current.filter(id => id !== permissionId));
         } else {
-            updateFormData("permissions")([...currentPermissions, permissionId]);
+            setSelectedPermissions([...current, permissionId]);
         }
     };
 
@@ -214,25 +202,7 @@ export default function EditUser() {
         return {};
     };
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
 
-    const handleNameChange = (value: string) => {
-        setFormData(prev => ({ ...prev, name: value }));
-    };
-
-    const handleStatusChange = (value: UserStatus | null) => {
-        if (value) {
-            setFormData(prev => ({ ...prev, status: value }));
-        }
-    };
 
     return (
         <section class="w-full max-w-none p-6">
@@ -250,259 +220,242 @@ export default function EditUser() {
                 </div>
             </div>
 
-            <Show when={!isLoaded()}>
-                <div class="space-y-4">
-                    <div class="animate-pulse bg-gray-200 h-8 w-1/3 rounded"></div>
-                    <div class="animate-pulse bg-gray-200 h-64 w-full rounded"></div>
-                </div>
-            </Show>
+       
 
-            <Show when={isLoaded()}>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {(() => {
-                        initializeForm(); // Initialize form data when user loads
-                        const data = userData()!;
+            <Show when={currentUser()}>
+                {(data) => <>
+                    <div class="lg:col-span-2">
+                        {/* User metadata display */}
+                        <Card class="mb-6">
+                            <CardHeader>
+                                <CardTitle>User Information</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                                    <div>
+                                        <span class="font-medium">User ID:</span>
+                                        <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                                            {data().id}
+                                        </code>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Username:</span>
+                                        <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                                            {params.username}
+                                        </code>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Current Status:</span>
+                                        <span class="ml-2">
+                                            {(() => {
+                                                const status = data().status || "Unknown";
+                                                return (
+                                                    <Badge
+                                                        variant={
+                                                            status === "Active" ? "success" :
+                                                                status === "Inactive" ? "default" :
+                                                                    status === "Banned" ? "error" :
+                                                                        "default"
+                                                        }
+                                                    >
+                                                        {status}
+                                                    </Badge>
+                                                );
+                                            })()}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Current Permissions:</span>
+                                        <span class="ml-2">{data().permissions?.length || 0} assigned</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                        return (
-                            <>
-                                {/* Main Form - Left Side (2/3 width) */}
-                                <div class="lg:col-span-2">
-                                    {/* User metadata display */}
-                                    <Card class="mb-6">
-                                        <CardHeader>
-                                            <CardTitle>User Information</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                                                <div>
-                                                    <span class="font-medium">User ID:</span>
-                                                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
-                                                        {data.id}
-                                                    </code>
-                                                </div>
-                                                <div>
-                                                    <span class="font-medium">Username:</span>
-                                                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
-                                                        {params.username}
-                                                    </code>
-                                                </div>
-                                                <div>
-                                                    <span class="font-medium">Current Status:</span>
-                                                    <span class="ml-2">
-                                                        {(() => {
-                                                            const status = data.status || "Unknown";
-                                                            return (
-                                                                <Badge
-                                                                    variant={
-                                                                        status === "Active" ? "success" :
-                                                                            status === "Inactive" ? "default" :
-                                                                                status === "Banned" ? "error" :
-                                                                                    "default"
-                                                                    }
-                                                                >
-                                                                    {status}
-                                                                </Badge>
-                                                            );
-                                                        })()}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <span class="font-medium">Current Permissions:</span>
-                                                    <span class="ml-2">{data.permissions?.length || 0} assigned</span>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Edit User Details</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <form action={updateUser} method="post" class="space-y-6">
+                                    <input type="hidden" name="username" value={params.username} />
 
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Edit User Details</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <form action={updateUser} method="post" class="space-y-6">
-                                                <input type="hidden" name="username" value={params.username} />
+                                    <TextField validationState={errors().name ? "invalid" : "valid"}>
+                                        <TextFieldLabel>Display Name *</TextFieldLabel>
+                                        <TextFieldInput
+                                            type="text"
+                                            name="name"
+                                            value={data().name || ""}
+                                            placeholder="Enter user's display name"
+                                            disabled={submission.pending}
+                                        />
+                                        <Show when={errors().name}>
+                                            <TextFieldErrorMessage>{errors().name}</TextFieldErrorMessage>
+                                        </Show>
+                                    </TextField>
 
-                                                <TextField validationState={errors().name ? "invalid" : "valid"}>
-                                                    <TextFieldLabel>Display Name *</TextFieldLabel>
-                                                    <TextFieldInput
-                                                        type="text"
-                                                        name="name"
-                                                        value={formData().name || ""}
-                                                        onInput={(e) => handleNameChange(e.currentTarget.value)}
-                                                        placeholder="Enter user's display name"
-                                                        disabled={submission.pending}
-                                                    />
-                                                    <Show when={errors().name}>
-                                                        <TextFieldErrorMessage>{errors().name}</TextFieldErrorMessage>
-                                                    </Show>
-                                                </TextField>
+                                    <div class="space-y-2">
+                                        <Select
+                                            value={selectedStatus()}
+                                            onChange={setSelectedStatus}
+                                            options={["Active", "Inactive", "Banned"]}
+                                            placeholder="Select status"
+                                            itemComponent={(props) => (
+                                                <SelectItem item={props.item}>
+                                                    <div class="flex items-center gap-2">
+                                                        <Badge
+                                                            variant={
+                                                                props.item.rawValue === "Active" ? "success" :
+                                                                    props.item.rawValue === "Inactive" ? "default" :
+                                                                        props.item.rawValue === "Banned" ? "error" :
+                                                                            "default"
+                                                            }
+                                                        >
+                                                            {props.item.rawValue}
+                                                        </Badge>
+                                                    </div>
+                                                </SelectItem>
+                                            )}
+                                            disabled={submission.pending}
+                                            validationState={errors().status ? "invalid" : "valid"}
+                                        >
+                                            <SelectLabel>Status *</SelectLabel>
+                                            <SelectTrigger aria-label="Status" class="w-full">
+                                                <SelectValue<UserStatus>>
+                                                    {(state) => {
+                                                        const currentStatus = state.selectedOption();
+                                                        return currentStatus ? (
+                                                            <Badge
+                                                                variant={
+                                                                    currentStatus === "Active" ? "success" :
+                                                                        currentStatus === "Inactive" ? "default" :
+                                                                            currentStatus === "Banned" ? "error" :
+                                                                                "default"
+                                                                }
+                                                            >
+                                                                {currentStatus}
+                                                            </Badge>
+                                                        ) : "Select status";
+                                                    }}
+                                                </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent />
+                                            <SelectHiddenSelect name="status" />
+                                        </Select>
+                                        <Show when={errors().status}>
+                                            <SelectErrorMessage>{errors().status}</SelectErrorMessage>
+                                        </Show>
+                                    </div>
 
-                                                <div class="space-y-2">
+                                    {/* Hidden inputs for selected permissions */}
+                                    <For each={selectedPermissions()}>
+                                        {(permission) => (
+                                            <input
+                                                type="hidden"
+                                                name={`permission_${permission}`}
+                                                value="on"
+                                            />
+                                        )}
+                                    </For>
 
-                                                    <Select
-                                                        value={formData().status}
-                                                        onChange={handleStatusChange}
-                                                        options={["Active", "Inactive", "Banned"]}
-                                                        placeholder="Select status"
-                                                        itemComponent={(props) => (
-                                                            <SelectItem item={props.item}>
-                                                                <div class="flex items-center gap-2">
-                                                                    <Badge
-                                                                        variant={
-                                                                            props.item.rawValue === "Active" ? "success" :
-                                                                                props.item.rawValue === "Inactive" ? "default" :
-                                                                                    props.item.rawValue === "Banned" ? "error" :
-                                                                                        "default"
-                                                                        }
+                                    {/* Submit Error */}
+                                    <Show when={errors().submit}>
+                                        <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+                                            <p class="text-red-600 text-sm">{errors().submit}</p>
+                                        </div>
+                                    </Show>
+
+                                    {/* Submit Buttons */}
+                                    <div class="flex justify-end space-x-4">
+                                        <Button type="button" variant="outline" disabled={submission.pending}>
+                                            <A href={`/users/${params.username}`}>Cancel</A>
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            disabled={submission.pending}
+                                            class="min-w-[120px]"
+                                        >
+                                            {submission.pending ? "Saving..." : "Save Changes"}
+                                        </Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Permissions Panel - Right Side (1/3 width) */}
+                    <div class="lg:col-span-1">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>User Permissions</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ErrorBoundary fallback={(err, reset) => (
+                                    <div class="text-center">
+                                        <p class="text-red-600 text-sm mb-4">Error loading permissions: {err.message}</p>
+                                        <Button onClick={reset} size="sm">Try Again</Button>
+                                    </div>
+                                )}>
+                                    <Suspense fallback={
+                                        <div class="space-y-3">
+                                            <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
+                                            <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
+                                            <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
+                                        </div>
+                                    }>
+                                        <Show when={allPermissions()}>
+                                            {(perms) => (
+                                                <div class="space-y-3">
+                                                    <p class="text-sm text-gray-600 mb-4">
+                                                        Select permissions for this user:
+                                                    </p>
+                                                    <div class="space-y-2 max-h-64 overflow-y-auto">
+                                                        <For each={perms()}>
+                                                            {(permission) => (
+                                                                <div class="flex items-center space-x-3">
+                                                                    <Checkbox
+                                                                        checked={selectedPermissions().includes(permission.id)}
+                                                                        onChange={() => togglePermission(permission.id)}
+                                                                        disabled={submission.pending}
+                                                                    />
+                                                                    <label
+                                                                        class="text-sm font-medium cursor-pointer flex-1"
+                                                                        onClick={() => togglePermission(permission.id)}
                                                                     >
-                                                                        {props.item.rawValue}
-                                                                    </Badge>
+                                                                        {permission.permission_name}
+                                                                    </label>
                                                                 </div>
-                                                            </SelectItem>
-                                                        )}
-                                                        disabled={submission.pending}
-                                                        validationState={errors().status ? "invalid" : "valid"}
-                                                    >
-                                                        <SelectLabel>Status *</SelectLabel>
-                                                        <SelectTrigger aria-label="Status" class="w-full">
-                                                            <SelectValue<UserStatus>>
-                                                                {(state) => {
-                                                                    const selectedStatus = state.selectedOption();
-                                                                    return selectedStatus ? (
-                                                                        <Badge
-                                                                            variant={
-                                                                                selectedStatus === "Active" ? "success" :
-                                                                                    selectedStatus === "Inactive" ? "default" :
-                                                                                        selectedStatus === "Banned" ? "error" :
-                                                                                            "default"
-                                                                            }
-                                                                        >
-                                                                            {selectedStatus}
-                                                                        </Badge>
-                                                                    ) : "Select status";
-                                                                }}
-                                                            </SelectValue>
-                                                        </SelectTrigger>
-                                                        <SelectContent />
-                                                    </Select>
-                                                    <input type="hidden" name="status" value={formData().status} />
-                                                    <Show when={errors().status}>
-                                                        <SelectErrorMessage>{errors().status}</SelectErrorMessage>
-                                                    </Show>
-                                                </div>
-
-                                                {/* Hidden inputs for selected permissions */}
-                                                <For each={formData().permissions}>
-                                                    {(permission) => (
-                                                        <input
-                                                            type="hidden"
-                                                            name={`permission_${permission}`}
-                                                            value="on"
-                                                        />
-                                                    )}
-                                                </For>
-
-                                                {/* Submit Error */}
-                                                <Show when={errors().submit}>
-                                                    <div class="p-4 bg-red-50 border border-red-200 rounded-md">
-                                                        <p class="text-red-600 text-sm">{errors().submit}</p>
+                                                            )}
+                                                        </For>
                                                     </div>
-                                                </Show>
-
-                                                {/* Submit Buttons */}
-                                                <div class="flex justify-end space-x-4">
-                                                    <Button type="button" variant="outline" disabled={submission.pending}>
-                                                        <A href={`/users/${params.username}`}>Cancel</A>
-                                                    </Button>
-                                                    <Button
-                                                        type="submit"
-                                                        disabled={submission.pending}
-                                                        class="min-w-[120px]"
-                                                    >
-                                                        {submission.pending ? "Saving..." : "Save Changes"}
-                                                    </Button>
-                                                </div>
-                                            </form>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-
-                                {/* Permissions Panel - Right Side (1/3 width) */}
-                                <div class="lg:col-span-1">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>User Permissions</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <ErrorBoundary fallback={(err, reset) => (
-                                                <div class="text-center">
-                                                    <p class="text-red-600 text-sm mb-4">Error loading permissions: {err.message}</p>
-                                                    <Button onClick={reset} size="sm">Try Again</Button>
-                                                </div>
-                                            )}>
-                                                <Suspense fallback={
-                                                    <div class="space-y-3">
-                                                        <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
-                                                        <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
-                                                        <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
-                                                    </div>
-                                                }>
-                                                    <Show when={allPermissions()}>
-                                                        {(perms) => (
-                                                            <div class="space-y-3">
-                                                                <p class="text-sm text-gray-600 mb-4">
-                                                                    Select permissions for this user:
-                                                                </p>
-                                                                <div class="space-y-2 max-h-64 overflow-y-auto">
-                                                                    <For each={perms()}>
-                                                                        {(permission) => (
-                                                                            <div class="flex items-center space-x-3">
-                                                                                <Checkbox
-                                                                                    checked={formData().permissions.includes(permission.id)}
-                                                                                    onChange={() => togglePermission(permission.id)}
-                                                                                    disabled={submission.pending}
-                                                                                />
-                                                                                <label
-                                                                                    class="text-sm font-medium cursor-pointer flex-1"
-                                                                                    onClick={() => togglePermission(permission.id)}
-                                                                                >
-                                                                                    {permission.permission_name}
-                                                                                </label>
-                                                                            </div>
-                                                                        )}
-                                                                    </For>
-                                                                </div>
-                                                                <Show when={formData().permissions.length > 0}>
-                                                                    <div class="pt-3 border-t">
-                                                                        <p class="text-sm text-gray-600 mb-2">
-                                                                            Selected ({formData().permissions.length}):
-                                                                        </p>
-                                                                        <div class="flex flex-wrap gap-1">
-                                                                            <For each={formData().permissions}>
-                                                                                {(permissionId) => {
-                                                                                    const permission = perms().find(p => p.id === permissionId);
-                                                                                    return (
-                                                                                        <span class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                                                                            {permission?.permission_name || permissionId}
-                                                                                        </span>
-                                                                                    );
-                                                                                }}
-                                                                            </For>
-                                                                        </div>
-                                                                    </div>
-                                                                </Show>
+                                                    <Show when={selectedPermissions().length > 0}>
+                                                        <div class="pt-3 border-t">
+                                                            <p class="text-sm text-gray-600 mb-2">
+                                                                Selected ({selectedPermissions().length}):
+                                                            </p>
+                                                            <div class="flex flex-wrap gap-1">
+                                                                <For each={selectedPermissions()}>
+                                                                    {(permissionId) => {
+                                                                        const permission = perms().find(p => p.id === permissionId);
+                                                                        return (
+                                                                            <span class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                                                                {permission?.permission_name || permissionId}
+                                                                            </span>
+                                                                        );
+                                                                    }}
+                                                                </For>
                                                             </div>
-                                                        )}
+                                                        </div>
                                                     </Show>
-                                                </Suspense>
-                                            </ErrorBoundary>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            </>
-                        );
-                    })()}
-                </div>
+                                                </div>
+                                            )}
+                                        </Show>
+                                    </Suspense>
+                                </ErrorBoundary>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </>}
             </Show>
         </section>
     );

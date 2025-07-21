@@ -18,9 +18,11 @@ export function TypstPreview(props: TypstPreviewProps) {
     const [isCompiling, setIsCompiling] = createSignal(false);
     
     const compileAction = useAction(compileTypstAction);
-
-    // Debounced compilation
-    let compileTimeout: ReturnType<typeof setTimeout> | undefined;
+    createEffect(() => {
+        if (props.content) {
+            compileTypst(props.content);
+        }
+    });
     
     const compileTypst = async (content: string) => {
         if (!content.trim()) {
@@ -50,21 +52,7 @@ export function TypstPreview(props: TypstPreviewProps) {
         }
     };
 
-    // Watch for content changes and compile with debouncing
-    createEffect(() => {
-        const content = props.content;
-        
-        // Clear previous timeout
-        if (compileTimeout) {
-            clearTimeout(compileTimeout);
-        }
-
-        // Set new timeout for debounced compilation
-        compileTimeout = setTimeout(() => {
-            compileTypst(content);
-        }, 500); // 500ms debounce
-    });
-
+  
     const forceRecompile = () => {
         compileTypst(props.content);
     };
