@@ -1,8 +1,9 @@
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuGroup } from "../ui/dropdown-menu"
-import { EllipsisVertical, LogOut } from "lucide-solid"
+import { CogIcon, EllipsisVertical, LogOut } from "lucide-solid"
 import { useAuth } from "~/lib/providers/auth-provider"
-import { redirect, useNavigate } from "@solidjs/router"
+import { A, redirect, useNavigate } from "@solidjs/router"
+import { Button } from "../ui/button"
 
 interface UserItemProps {
   username: string
@@ -52,6 +53,9 @@ export default function UserItem(props: UserItemProps) {
             <DropdownMenuItem >
               <button class="flex flex-row gap-3" onclick={logoutClick}><LogOut />
                 Log out</button>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <button class="flex flex-row gap-3" ><CogIcon></CogIcon><A href="/me" class="">Settings</A></button>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

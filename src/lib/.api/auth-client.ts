@@ -804,6 +804,69 @@ export interface paths {
         };
         trace?: never;
     };
+    "/me/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update current user's status */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json; charset=utf-8": components["schemas"]["UpdateStatusRequest"];
+                };
+            };
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -816,6 +879,8 @@ export interface components {
         AddpermissionssRequest: {
             permissions: string[];
         };
+        /** @enum {string} */
+        AllowedUserStatus: "active" | "inactive";
         /** BatchPermissionsRequest */
         BatchPermissionsRequest: {
             uuids: string[];
@@ -882,6 +947,10 @@ export interface components {
         /** UpdatePasswordRequest */
         UpdatePasswordRequest: {
             new_password: string;
+        };
+        /** UpdateStatusRequest */
+        UpdateStatusRequest: {
+            status: components["schemas"]["AllowedUserStatus"];
         };
         /** UpdateUsernameRequest */
         UpdateUsernameRequest: {
