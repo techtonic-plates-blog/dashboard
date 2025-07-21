@@ -168,8 +168,7 @@ function AssetViewer(props: { asset: AssetInfo }) {
             await deleteAction(props.asset.name);
             setIsOpen(false);
             setShowDeleteConfirm(false);
-            // Refresh the data
-            window.location.reload();
+           
         } catch (error) {
             console.error('Delete failed:', error);
             // You could add a toast notification here
