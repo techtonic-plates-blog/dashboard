@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter>
 
-          <UserItem username={props.user.username!}></UserItem>
+          <UserItem username={props.user.username}></UserItem>
       
       </SidebarFooter>
     </Sidebar>
