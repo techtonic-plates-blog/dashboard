@@ -11,7 +11,7 @@ export const route = {
 } satisfies RouteDefinition;
 
 export default function AppLayout(props: any) {
-  const auth = useAuthSafe();
+  const auth = createAsync(() => getCurrentUserQuery());
 
   
 
@@ -26,10 +26,10 @@ export default function AppLayout(props: any) {
         } as JSX.CSSProperties
       }>
         <Suspense>
-          <Show when={auth?.user()}>
-            {(st) =>
+          <Show when={auth()?.user}>
+            {(a) =>
               <>
-                <AppSidebar variant="inset" user={st()} />
+                <AppSidebar variant="inset" user={a()} />
                 <SidebarInset class="flex flex-col w-full ">
                   <SiteHeader></SiteHeader>
 
