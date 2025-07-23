@@ -4,7 +4,7 @@
   "scripts": {
     "update-api-client": "bun run update-posts-client && bun run update-auth-client && bun run update-assets-client",
     "beforedev": "bun run update-api-client",
-    "dev": "vinxi dev --devtools true",
+    "dev": "vinxi dev ",
     "build": "vinxi build",
     "beforestart": "bun run update-api-client",
     "start": "vinxi start",

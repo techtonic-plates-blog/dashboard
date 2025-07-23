@@ -9,6 +9,7 @@ import { postsClient } from "~/lib/client";
 import { A, useNavigate, action, useSubmission, redirect, createAsync, query, RouteDefinition, useParams } from "@solidjs/router";
 import { components } from "$api/posts-client";
 import { TypstPreview } from "~/components/typst-preview";
+
 type PostStatus = components["schemas"]["PostsStatusEnum"];
 
 const statusOptions: { value: PostStatus; label: string; variant: "default" | "success" | "secondary" | "error" }[] = [
@@ -55,6 +56,8 @@ const updatePost = action(async (formData: FormData) => {
     const subheading = formData.get("subheading") as string;
     const post_status = formData.get("post_status") as PostStatus;
 
+   // console.log(post_status)
+
     const errors: Record<string, string> = {};
 
     if (!title?.trim()) {
@@ -78,6 +81,7 @@ const updatePost = action(async (formData: FormData) => {
     }
 
     try {
+        console.log("Post status is:", post_status)
         const { data, response } = await postsClient.PATCH("/posts/{post_slug}", {
             params: {
                 path: { post_slug: slug }
@@ -87,19 +91,19 @@ const updatePost = action(async (formData: FormData) => {
                 author: author.trim(),
                 body: body.trim(),
                 subheading: subheading.trim(),
-                post_status
+                status: post_status
             },
             headers: {
                 "Content-Type": "application/json"
             },
             parseAs: "text"
         });
-        console.log("Post updated successfully:", data);
+        console.log("Post updated successfully:" + data);
         if (!response.ok) {
             throw new Error(`Failed to update post: ${response.status}`);
         }
 
-        throw redirect(`/posts/${data}`);
+        return redirect(`/posts/${data}`);
     } catch (error) {
         console.error("Error updating post:", error);
         if (error instanceof Response) {
@@ -120,7 +124,11 @@ export const route = {
 
 export default function EditPost() {
     const params = useParams();
-    const submission = useSubmission(updatePost);
+    const submission = useSubmission(updatePost, ([formData]) => {
+        console.log(formData)
+
+        return true
+    });
     const post = createAsync(() => postQuery(params.slug));
 
     const [postBody, setPostBody] = createSignal<undefined | string>(undefined);
@@ -136,6 +144,7 @@ export default function EditPost() {
         }
     });
 
+    
 
 
 

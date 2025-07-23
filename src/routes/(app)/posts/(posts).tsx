@@ -136,21 +136,7 @@ const columns: Column<{
                 </>
             )
         },
-        {
-            key: "id",
-            label: "Actions",
-            render: (value: string, row: any) => (
-                <div class="flex items-center gap-2">
-                    <PostPreview post={row} />
-                    <Button size="sm" variant="ghost" class="gap-2">
-                        <A href={`/posts/${row.slug}`} class="flex items-center gap-2">
-                            View
-                        </A>
-                    </Button>
-                </div>
-            ),
-            priority: 1
-        }
+       
     ];
 
 export default function Posts() {
@@ -166,6 +152,7 @@ export default function Posts() {
         <section>
             <Title>Posts</Title>
             <div class="flex justify-between items-center mb-6">
+                 <h1 class="text-2xl font-bold">Posts</h1>
                 <Button class="ml-auto"><A href="/posts/new">Add Post</A></Button>
             </div>
             <section>
