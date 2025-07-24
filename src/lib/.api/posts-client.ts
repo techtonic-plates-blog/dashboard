@@ -59,7 +59,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json; charset=utf-8": components["schemas"]["Posts"];
+                        "application/json; charset=utf-8": components["schemas"]["PostWithTags"];
                     };
                 };
                 404: {
@@ -237,7 +237,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json; charset=utf-8": components["schemas"]["Posts"][];
+                        "application/json; charset=utf-8": components["schemas"]["PostWithTags"][];
                     };
                 };
             };
@@ -264,6 +264,8 @@ export interface components {
             author: string;
             body: string;
             subheading: string;
+            tags?: string[];
+            title_image_url?: string;
         };
         /** PatchPostRequest */
         PatchPostRequest: {
@@ -272,13 +274,16 @@ export interface components {
             body?: string;
             subheading?: string;
             status?: components["schemas"]["PostsStatusEnum"];
+            tags?: string[];
+            title_image_url?: string;
         };
-        /** Posts */
-        Posts: {
+        /** PostWithTags */
+        PostWithTags: {
             /** Format: uuid */
             id: string;
             slug: string;
             title: string;
+            title_image_url?: string;
             /** Format: naive-date-time */
             creation_time: string;
             body: string;
@@ -289,6 +294,7 @@ export interface components {
             /** Format: naive-date-time */
             last_edit?: string;
             post_status: components["schemas"]["PostsStatusEnum"];
+            tags: string[];
         };
         /** @enum {string} */
         PostsStatusEnum: "Draft" | "Published" | "Archived" | "Removed";

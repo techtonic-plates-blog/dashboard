@@ -54,7 +54,14 @@ const updatePost = action(async (formData: FormData) => {
     const author = formData.get("author") as string;
     const body = formData.get("body") as string;
     const subheading = formData.get("subheading") as string;
+    const title_image_url = formData.get("title_image_url") as string;
+    const tags_string = formData.get("tags") as string;
     const post_status = formData.get("post_status") as PostStatus;
+
+    // Parse tags from comma-separated string
+    const tags = tags_string?.trim() 
+        ? tags_string.split(",").map(tag => tag.trim()).filter(tag => tag.length > 0)
+        : [];
 
    // console.log(post_status)
 
@@ -91,7 +98,9 @@ const updatePost = action(async (formData: FormData) => {
                 author: author.trim(),
                 body: body.trim(),
                 subheading: subheading.trim(),
-                status: post_status
+                status: post_status,
+                title_image_url: title_image_url?.trim() || undefined,
+                tags: tags.length > 0 ? tags : undefined
             },
             headers: {
                 "Content-Type": "application/json"
@@ -286,6 +295,49 @@ export default function EditPost() {
                                     <Show when={errors().subheading}>
                                         <TextFieldErrorMessage>{errors().subheading}</TextFieldErrorMessage>
                                     </Show>
+                                </TextField>
+
+                                <TextField validationState={errors().title_image_url ? "invalid" : "valid"}>
+                                    <TextFieldLabel>Title Image URL</TextFieldLabel>
+                                    <TextFieldInput
+                                        type="url"
+                                        name="title_image_url"
+                                        value={data().title_image_url || ""}
+                                        placeholder="Enter title image URL (optional)"
+                                        disabled={submission.pending}
+                                    />
+                                    <Show when={errors().title_image_url}>
+                                        <TextFieldErrorMessage>{errors().title_image_url}</TextFieldErrorMessage>
+                                    </Show>
+                                    <Show when={data().title_image_url}>
+                                        <div class="mt-2">
+                                            <p class="text-sm text-gray-600 mb-2">Preview:</p>
+                                            <img
+                                                src={data().title_image_url}
+                                                alt="Title image preview"
+                                                class="max-w-xs rounded-lg shadow-sm border"
+                                                style="max-height: 200px;"
+                                                loading="lazy"
+                                            />
+                                        </div>
+                                    </Show>
+                                </TextField>
+
+                                <TextField validationState={errors().tags ? "invalid" : "valid"}>
+                                    <TextFieldLabel>Tags</TextFieldLabel>
+                                    <TextFieldInput
+                                        type="text"
+                                        name="tags"
+                                        value={data().tags?.join(", ") || ""}
+                                        placeholder="Enter tags separated by commas (optional)"
+                                        disabled={submission.pending}
+                                    />
+                                    <Show when={errors().tags}>
+                                        <TextFieldErrorMessage>{errors().tags}</TextFieldErrorMessage>
+                                    </Show>
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        Separate multiple tags with commas (e.g., "technology, programming, web development")
+                                    </p>
                                 </TextField>
 
                                 <div class="space-y-2">

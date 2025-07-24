@@ -1,7 +1,7 @@
 
 import { Title } from "@solidjs/meta";
 import { createAsync, query, RouteDefinition, useParams, A, useNavigate, action, useAction, redirect } from "@solidjs/router";
-import { createResource, ErrorBoundary, Show, Suspense, createSignal } from "solid-js";
+import { createResource, ErrorBoundary, Show, Suspense, createSignal, For } from "solid-js";
 import { postsClient } from "~/lib/client";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -200,6 +200,37 @@ export default function Post() {
                                                     {postData.subheading}
                                                 </p>
                                             )}
+
+                                            {/* Title Image */}
+                                            <Show when={postData.title_image_url}>
+                                                <div class="mb-6">
+                                                    <img
+                                                        src={postData.title_image_url}
+                                                        alt={`Title image for ${postData.title}`}
+                                                        class="w-full max-w-2xl mx-auto rounded-lg shadow-lg object-cover"
+                                                        style="max-height: 400px;"
+                                                        loading="lazy"
+                                                    />
+                                                </div>
+                                            </Show>
+
+                                            {/* Tags */}
+                                            <Show when={postData.tags && postData.tags.length > 0}>
+                                                <div class="mb-4">
+                                                    <div class="flex items-center gap-2 mb-2">
+                                                        <span class="text-sm font-medium text-gray-700">Tags:</span>
+                                                    </div>
+                                                    <div class="flex flex-wrap gap-2">
+                                                        <For each={postData.tags}>
+                                                            {(tag: string) => (
+                                                                <Badge variant="secondary" class="text-sm">
+                                                                    {tag}
+                                                                </Badge>
+                                                            )}
+                                                        </For>
+                                                    </div>
+                                                </div>
+                                            </Show>
 
                                             <div class="flex flex-wrap gap-4 text-sm text-gray-500">
                                                 <div class="flex items-center gap-1">

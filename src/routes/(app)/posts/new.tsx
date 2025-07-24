@@ -1,7 +1,8 @@
 import { Title } from "@solidjs/meta";
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, For } from "solid-js";
 import { TextField, TextFieldInput, TextFieldLabel, TextFieldTextArea, TextFieldErrorMessage } from "~/components/ui/text-field";
 import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { postsClient } from "~/lib/client";
 import { A, useNavigate, action, useSubmission, redirect } from "@solidjs/router";
@@ -18,6 +19,13 @@ const createPost = action(async (formData: FormData) => {
     const author = formData.get("author") as string;
     const body = formData.get("body") as string;
     const subheading = formData.get("subheading") as string;
+    const title_image_url = formData.get("title_image_url") as string;
+    const tags_string = formData.get("tags") as string;
+
+    // Parse tags from comma-separated string
+    const tags = tags_string?.trim() 
+        ? tags_string.split(",").map(tag => tag.trim()).filter(tag => tag.length > 0)
+        : [];
 
     const errors: Record<string, string> = {};
 
@@ -44,7 +52,9 @@ const createPost = action(async (formData: FormData) => {
                 title: title.trim(),
                 author: author.trim(),
                 body: body.trim(),
-                subheading: subheading.trim()
+                subheading: subheading.trim(),
+                title_image_url: title_image_url?.trim() || undefined,
+                tags: tags.length > 0 ? tags : undefined
             },
             parseAs: "text"
         });
@@ -76,11 +86,40 @@ export default function NewPost() {
         title: "",
         author: "",
         body: "",
-        subheading: ""
+        subheading: "",
+        title_image_url: "",
+        tags: []
     });
 
     const updateFormData = (field: keyof InsertPostRequest) => (value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const [tagInput, setTagInput] = createSignal("");
+
+    const addTag = (tagText: string) => {
+        const newTag = tagText.trim();
+        if (newTag && !formData().tags?.includes(newTag)) {
+            setFormData(prev => ({ 
+                ...prev, 
+                tags: [...(prev.tags || []), newTag] 
+            }));
+        }
+        setTagInput("");
+    };
+
+    const removeTag = (tagToRemove: string) => {
+        setFormData(prev => ({ 
+            ...prev, 
+            tags: prev.tags?.filter(tag => tag !== tagToRemove) || [] 
+        }));
+    };
+
+    const handleTagKeyPress = (e: KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            addTag(tagInput());
+        }
     };
 
     // Get errors from submission result
@@ -155,6 +194,80 @@ export default function NewPost() {
                             <Show when={errors().subheading}>
                                 <TextFieldErrorMessage>{errors().subheading}</TextFieldErrorMessage>
                             </Show>
+                        </TextField>
+
+                        {/* Title Image URL Field */}
+                        <TextField validationState={errors().title_image_url ? "invalid" : "valid"}>
+                            <TextFieldLabel>Title Image URL</TextFieldLabel>
+                            <TextFieldInput
+                                type="text"
+                                name="title_image_url"
+                                value={formData().title_image_url || ""}
+                                onInput={(e) => updateFormData("title_image_url")(e.currentTarget.value)}
+                                placeholder="Enter title image URL (optional)"
+                                disabled={submission.pending}
+                            />
+                            <Show when={errors().title_image_url}>
+                                <TextFieldErrorMessage>{errors().title_image_url}</TextFieldErrorMessage>
+                            </Show>
+                            <Show when={formData().title_image_url?.trim()}>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-600 mb-2">Preview:</p>
+                                    <img
+                                        src={formData().title_image_url}
+                                        alt="Title image preview"
+                                        class="max-w-xs rounded-lg shadow-sm border"
+                                        style="max-height: 200px;"
+                                        loading="lazy"
+                                    />
+                                </div>
+                            </Show>
+                        </TextField>
+
+                        {/* Tags Field */}
+                        <TextField validationState={errors().tags ? "invalid" : "valid"}>
+                            <TextFieldLabel>Tags</TextFieldLabel>
+                            <div class="space-y-3">
+                                <TextFieldInput
+                                    type="text"
+                                    value={tagInput()}
+                                    onInput={(e) => setTagInput(e.currentTarget.value)}
+                                    onKeyPress={handleTagKeyPress}
+                                    placeholder="Enter a tag and press Enter to add"
+                                    disabled={submission.pending}
+                                />
+                                <input
+                                    type="hidden"
+                                    name="tags"
+                                    value={formData().tags?.join(", ") || ""}
+                                />
+                                <Show when={formData().tags && formData().tags!.length > 0}>
+                                    <div>
+                                        <p class="text-sm text-gray-600 mb-2">Tags:</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <For each={formData().tags}>
+                                                {(tag: string) => (
+                                                    <Badge 
+                                                        variant="secondary" 
+                                                        class="text-sm flex items-center gap-1 cursor-pointer hover:bg-gray-200"
+                                                        onClick={() => removeTag(tag)}
+                                                    >
+                                                        {tag}
+                                                        <span class="text-gray-500 hover:text-red-500">×</span>
+                                                    </Badge>
+                                                )}
+                                            </For>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1">Click on a tag to remove it</p>
+                                    </div>
+                                </Show>
+                            </div>
+                            <Show when={errors().tags}>
+                                <TextFieldErrorMessage>{errors().tags}</TextFieldErrorMessage>
+                            </Show>
+                            <p class="text-sm text-gray-600 mt-1">
+                                Type a tag and press Enter to add it to the list
+                            </p>
                         </TextField>
 
                         {/* Body Field */}

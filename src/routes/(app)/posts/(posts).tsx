@@ -1,6 +1,6 @@
 import { Title } from "@solidjs/meta";
 import DataTable from "~/components/ui/data-table";
-import { createResource, ErrorBoundary, Match, Show, Suspense, Switch, createSignal } from "solid-js";
+import { createResource, ErrorBoundary, Match, Show, Suspense, Switch, createSignal, For } from "solid-js";
 import { postsClient } from "~/lib/client";
 import { A, createAsync, query, RouteDefinition, useNavigate } from "@solidjs/router";
 import type { Column } from "~/components/ui/data-table";
@@ -86,6 +86,7 @@ const columns: Column<{
     subheading: string;
     last_edit?: string;
     post_status: PostStatus;
+    tags: string[];
 }>[] = [
         {
             key: "title",
@@ -134,6 +135,31 @@ const columns: Column<{
                         </Match>
                     </Switch>
                 </>
+            )
+        },
+        {
+            key: "tags",
+            label: "Tags",
+            filterable: true,
+            render: (value: string[]) => (
+                <div class="flex flex-wrap gap-1">
+                    <Show when={value && value.length > 0} fallback={
+                        <span class="text-gray-400 text-sm">No tags</span>
+                    }>
+                        <For each={value.slice(0, 3)}>
+                            {(tag: string) => (
+                                <Badge variant="outline" class="text-xs">
+                                    {tag}
+                                </Badge>
+                            )}
+                        </For>
+                        <Show when={value.length > 3}>
+                            <Badge variant="outline" class="text-xs">
+                                +{value.length - 3}
+                            </Badge>
+                        </Show>
+                    </Show>
+                </div>
             )
         },
        
