@@ -300,7 +300,7 @@ export default function EditPost() {
                                 <TextField validationState={errors().title_image_url ? "invalid" : "valid"}>
                                     <TextFieldLabel>Title Image URL</TextFieldLabel>
                                     <TextFieldInput
-                                        type="url"
+                                        type="text"
                                         name="title_image_url"
                                         value={data().title_image_url || ""}
                                         placeholder="Enter title image URL (optional)"
