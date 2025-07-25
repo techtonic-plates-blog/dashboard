@@ -202,10 +202,10 @@ export default function Post() {
                                             )}
 
                                             {/* Title Image */}
-                                            <Show when={postData.title_image_url}>
+                                            <Show when={postData.hero_image}>
                                                 <div class="mb-6">
                                                     <img
-                                                        src={postData.title_image_url}
+                                                        src={postData.hero_image}
                                                         alt={`Title image for ${postData.title}`}
                                                         class="w-full max-w-2xl mx-auto rounded-lg shadow-lg object-cover"
                                                         style="max-height: 400px;"

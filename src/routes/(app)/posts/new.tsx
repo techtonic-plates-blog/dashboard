@@ -19,7 +19,7 @@ const createPost = action(async (formData: FormData) => {
     const author = formData.get("author") as string;
     const body = formData.get("body") as string;
     const subheading = formData.get("subheading") as string;
-    const title_image_url = formData.get("title_image_url") as string;
+    const hero_image = formData.get("hero_image") as string;
     const tags_string = formData.get("tags") as string;
 
     // Parse tags from comma-separated string
@@ -53,7 +53,7 @@ const createPost = action(async (formData: FormData) => {
                 author: author.trim(),
                 body: body.trim(),
                 subheading: subheading.trim(),
-                title_image_url: title_image_url?.trim() || undefined,
+                hero_image: hero_image?.trim() || undefined,
                 tags: tags.length > 0 ? tags : undefined
             },
             parseAs: "text"
@@ -87,7 +87,7 @@ export default function NewPost() {
         author: "",
         body: "",
         subheading: "",
-        title_image_url: "",
+        hero_image: "",
         tags: []
     });
 
@@ -197,24 +197,24 @@ export default function NewPost() {
                         </TextField>
 
                         {/* Title Image URL Field */}
-                        <TextField validationState={errors().title_image_url ? "invalid" : "valid"}>
+                        <TextField validationState={errors().hero_image ? "invalid" : "valid"}>
                             <TextFieldLabel>Title Image URL</TextFieldLabel>
                             <TextFieldInput
                                 type="text"
-                                name="title_image_url"
-                                value={formData().title_image_url || ""}
-                                onInput={(e) => updateFormData("title_image_url")(e.currentTarget.value)}
+                                name="hero_image"
+                                value={formData().hero_image || ""}
+                                onInput={(e) => updateFormData("hero_image")(e.currentTarget.value)}
                                 placeholder="Enter title image URL (optional)"
                                 disabled={submission.pending}
                             />
-                            <Show when={errors().title_image_url}>
-                                <TextFieldErrorMessage>{errors().title_image_url}</TextFieldErrorMessage>
+                            <Show when={errors().hero_image}>
+                                <TextFieldErrorMessage>{errors().hero_image}</TextFieldErrorMessage>
                             </Show>
-                            <Show when={formData().title_image_url?.trim()}>
+                            <Show when={formData().hero_image?.trim()}>
                                 <div class="mt-2">
                                     <p class="text-sm text-gray-600 mb-2">Preview:</p>
                                     <img
-                                        src={formData().title_image_url}
+                                        src={formData().hero_image}
                                         alt="Title image preview"
                                         class="max-w-xs rounded-lg shadow-sm border"
                                         style="max-height: 200px;"

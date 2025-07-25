@@ -265,7 +265,7 @@ export interface components {
             body: string;
             subheading: string;
             tags?: string[];
-            title_image_url?: string;
+            hero_image?: string;
         };
         /** PatchPostRequest */
         PatchPostRequest: {
@@ -275,7 +275,7 @@ export interface components {
             subheading?: string;
             status?: components["schemas"]["PostsStatusEnum"];
             tags?: string[];
-            title_image_url?: string;
+            hero_image?: string;
         };
         /** PostWithTags */
         PostWithTags: {
@@ -283,7 +283,7 @@ export interface components {
             id: string;
             slug: string;
             title: string;
-            title_image_url?: string;
+            hero_image?: string;
             /** Format: naive-date-time */
             creation_time: string;
             body: string;

@@ -54,7 +54,7 @@ const updatePost = action(async (formData: FormData) => {
     const author = formData.get("author") as string;
     const body = formData.get("body") as string;
     const subheading = formData.get("subheading") as string;
-    const title_image_url = formData.get("title_image_url") as string;
+    const hero_image = formData.get("hero_image") as string;
     const tags_string = formData.get("tags") as string;
     const post_status = formData.get("post_status") as PostStatus;
 
@@ -99,7 +99,7 @@ const updatePost = action(async (formData: FormData) => {
                 body: body.trim(),
                 subheading: subheading.trim(),
                 status: post_status,
-                title_image_url: title_image_url?.trim() || undefined,
+                hero_image: hero_image?.trim() || undefined,
                 tags: tags.length > 0 ? tags : undefined
             },
             headers: {
@@ -297,23 +297,23 @@ export default function EditPost() {
                                     </Show>
                                 </TextField>
 
-                                <TextField validationState={errors().title_image_url ? "invalid" : "valid"}>
+                                <TextField validationState={errors().hero_image ? "invalid" : "valid"}>
                                     <TextFieldLabel>Title Image URL</TextFieldLabel>
                                     <TextFieldInput
                                         type="text"
-                                        name="title_image_url"
-                                        value={data().title_image_url || ""}
+                                        name="hero_image"
+                                        value={data().hero_image || ""}
                                         placeholder="Enter title image URL (optional)"
                                         disabled={submission.pending}
                                     />
-                                    <Show when={errors().title_image_url}>
-                                        <TextFieldErrorMessage>{errors().title_image_url}</TextFieldErrorMessage>
+                                    <Show when={errors().hero_image}>
+                                        <TextFieldErrorMessage>{errors().hero_image}</TextFieldErrorMessage>
                                     </Show>
-                                    <Show when={data().title_image_url}>
+                                    <Show when={data().hero_image}>
                                         <div class="mt-2">
                                             <p class="text-sm text-gray-600 mb-2">Preview:</p>
                                             <img
-                                                src={data().title_image_url}
+                                                src={data().hero_image}
                                                 alt="Title image preview"
                                                 class="max-w-xs rounded-lg shadow-sm border"
                                                 style="max-height: 200px;"
