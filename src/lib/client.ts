@@ -11,7 +11,6 @@ import { redirect } from "@solidjs/router";
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
     try {
-      // Check if token is expired and needs refresh
       const session = await useSession();
       const sessionData = session.data;
 
@@ -30,7 +29,6 @@ const authMiddleware: Middleware = {
         }
       }
 
-      // Get the current (possibly refreshed) JWT token
       const jwt = await getJwtToken();
       if (jwt) {
         request.headers.set("Authorization", `Bearer ${jwt}`);
@@ -48,7 +46,6 @@ const authMiddleware: Middleware = {
       let resText = await response.text();
       console.log("Received 500 response:" + resText);
     }
-    // Only handle 401 responses
     if (response.status === 401) {
       let resText = await response.text();
       console.log("Received 401 response:" + resText);
@@ -56,7 +53,6 @@ const authMiddleware: Middleware = {
       console.log("401 response received, verifying JWT with /me endpoint");
 
       try {
-        // Check if we have a valid session
         const sessionValid = await isSessionValid();
 
         if (!sessionValid) {
@@ -73,13 +69,8 @@ const authMiddleware: Middleware = {
           throw redirect("/login");
         }
 
-        // Create a temporary auth client to verify JWT with /me endpoint
-        const tempAuthClient = createClient<authPaths>({
-          baseUrl: process.env.AUTH_API,
-        });
-
-        // Call /me endpoint to verify if JWT is valid
-        const meResponse = await tempAuthClient.GET("/me", {
+    
+        const meResponse = await anonymousAuthClient.GET("/me", {
           headers: {
             Authorization: `Bearer ${jwt}`,
           },
@@ -91,9 +82,7 @@ const authMiddleware: Middleware = {
           throw redirect("/login");
         } else {
           console.log("JWT is valid at /me but got 401 from original request - might be a permission issue");
-          // JWT is valid but still got 401 from original endpoint
-          // This could be a permissions issue, not an auth issue
-          // Let the application handle this case
+   
         }
 
       } catch (error) {

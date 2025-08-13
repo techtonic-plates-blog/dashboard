@@ -1,70 +1,114 @@
 import { User } from "./providers/auth-provider";
 
-export function hasPermission(user: User | null, permission: string): boolean {
+// Permission object structure that matches the backend
+export interface Permission {
+  action: string;
+  resource: string;
+}
+
+// Helper function to create a permission object
+export function createPermission(action: string, resource: string): Permission {
+  return { action, resource };
+}
+
+export function hasPermission(user: User | null, permission: Permission): boolean {
   if (!user || !user.permissions) {
     return false;
   }
-  return user.permissions.includes(permission);
+  
+  // Check if user has the permission by matching action and resource
+  return user.permissions.some(p => 
+    p.action === permission.action && p.resource === permission.resource
+  );
 }
 
-export function hasAnyPermission(user: User | null, permissions: string[]): boolean {
+export function hasAnyPermission(user: User | null, permissions: Permission[]): boolean {
   if (!user || !user.permissions) {
     return false;
   }
-  return permissions.some(permission => user.permissions.includes(permission));
+  return permissions.some(permission => hasPermission(user, permission));
 }
 
-// Define permission constants for easier maintenance
-export const PERMISSIONS = {
-  // Post permissions
-  CREATE_POST: 'create post',
-  UPDATE_POST: 'update post',
-  DELETE_POST: 'delete post',
+// Check if user has specific action on specific resource
+export function hasPermissionAction(user: User | null, action: string, resource: string): boolean {
+  return hasPermission(user, createPermission(action, resource));
+}
+
+// Check if user has any of the specified actions on a resource
+export function hasAnyPermissionAction(user: User | null, actions: string[], resource: string): boolean {
+  if (!user || !user.permissions) {
+    return false;
+  }
   
-  // User permissions
-  GET_USER: 'get user',
-  CREATE_USER: 'create user',
-  UPDATE_USER: 'update user',
-  DELETE_USER: 'delete user',
+  return actions.some(action => hasPermissionAction(user, action, resource));
+}
+
+// Check if user has specific action on any resource
+export function hasActionOnAnyResource(user: User | null, action: string): boolean {
+  if (!user || !user.permissions) {
+    return false;
+  }
   
-  // Permission management permissions
-  CREATE_PERMISSION: 'create permission',
-  DELETE_PERMISSION: 'delete permission',
-  ASSIGN_PERMISSION: 'assign permission',
+  return user.permissions.some(p => p.action === action);
+}
+
+// Check if user has any action on specific resource
+export function hasAnyActionOnResource(user: User | null, resource: string): boolean {
+  if (!user || !user.permissions) {
+    return false;
+  }
   
-  ADD_ASSET: 'add asset',
-  DELETE_ASSET: 'delete asset'
+  return user.permissions.some(p => p.resource === resource);
+}
+
+// Check if user has all required permissions
+export function hasAllPermissions(user: User | null, permissions: Permission[]): boolean {
+  if (!user || !user.permissions) {
+    return false;
+  }
+  
+  return permissions.every(permission => hasPermission(user, permission));
+}
+
+// Define action constants for the new permission system (CRUD operations)
+export const ACTIONS = {
+  CREATE: 'create',
+  READ: 'read', 
+  UPDATE: 'update',
+  DELETE: 'delete'
 } as const;
 
-// Helper functions for checking groups of related permissions
-export function hasAnyPostPermission(user: User | null): boolean {
-  return hasAnyPermission(user, [
-    PERMISSIONS.CREATE_POST,
-    PERMISSIONS.UPDATE_POST,
-    PERMISSIONS.DELETE_POST
-  ]);
-}
+// Define resource constants for the new permission system
+export const RESOURCES = {
+  POST: 'post',
+  USER: 'user', 
+  PERMISSION: 'permission',
+  ASSET: 'asset'
+} as const;
 
-export function hasAnyUserPermission(user: User | null): boolean {
-  return hasAnyPermission(user, [
-    PERMISSIONS.GET_USER,
-    PERMISSIONS.CREATE_USER,
-    PERMISSIONS.UPDATE_USER,
-    PERMISSIONS.DELETE_USER
-  ]);
-}
-
-export function hasAnyPermissionManagementPermission(user: User | null): boolean {
-  return hasAnyPermission(user, [
-    PERMISSIONS.CREATE_PERMISSION,
-    PERMISSIONS.DELETE_PERMISSION,
-    PERMISSIONS.ASSIGN_PERMISSION
-  ]);
-}
-
-export function hasAnyAssetPermission(user: User | null): boolean {
-  return hasAnyPermission(user, [
-    PERMISSIONS.ADD_ASSET,
-    PERMISSIONS.DELETE_ASSET
-  ]);
-}
+// Object-based permission constants for more structured access
+export const PERMISSION_OBJECTS = {
+  // Post permissions
+  CREATE_POST: createPermission(ACTIONS.CREATE, RESOURCES.POST),
+  READ_POST: createPermission(ACTIONS.READ, RESOURCES.POST),
+  UPDATE_POST: createPermission(ACTIONS.UPDATE, RESOURCES.POST),
+  DELETE_POST: createPermission(ACTIONS.DELETE, RESOURCES.POST),
+  
+  // User permissions
+  READ_USER: createPermission(ACTIONS.READ, RESOURCES.USER),
+  CREATE_USER: createPermission(ACTIONS.CREATE, RESOURCES.USER),
+  UPDATE_USER: createPermission(ACTIONS.UPDATE, RESOURCES.USER),
+  DELETE_USER: createPermission(ACTIONS.DELETE, RESOURCES.USER),
+  
+  // Permission management permissions
+  CREATE_PERMISSION: createPermission(ACTIONS.CREATE, RESOURCES.PERMISSION),
+  READ_PERMISSION: createPermission(ACTIONS.READ, RESOURCES.PERMISSION),
+  UPDATE_PERMISSION: createPermission(ACTIONS.UPDATE, RESOURCES.PERMISSION),
+  DELETE_PERMISSION: createPermission(ACTIONS.DELETE, RESOURCES.PERMISSION),
+  
+  // Asset permissions
+  CREATE_ASSET: createPermission(ACTIONS.CREATE, RESOURCES.ASSET),
+  READ_ASSET: createPermission(ACTIONS.READ, RESOURCES.ASSET),
+  UPDATE_ASSET: createPermission(ACTIONS.UPDATE, RESOURCES.ASSET),
+  DELETE_ASSET: createPermission(ACTIONS.DELETE, RESOURCES.ASSET)
+} as const;

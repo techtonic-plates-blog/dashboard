@@ -2,13 +2,13 @@ import { For, JSX } from "solid-js";
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
 import { Button } from "~/components/ui/button";
 import { User } from "~/lib/providers/auth-provider";
-import { hasPermission, hasAnyUserPermission } from "~/lib/permissions";
+import { hasPermission, Permission } from "~/lib/permissions";
 
 interface MainItem {
     title: string,
     href: string,
     icon: JSX.Element,
-    requiredPermission?: string,
+    requiredPermission?: Permission,
     customPermissionCheck?: (user: User | null) => boolean
 }
 

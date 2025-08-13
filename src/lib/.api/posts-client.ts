@@ -124,6 +124,14 @@ export interface paths {
                         "text/plain; charset=utf-8": string;
                     };
                 };
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -189,6 +197,14 @@ export interface paths {
             };
             responses: {
                 201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain; charset=utf-8": string;
+                    };
+                };
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };

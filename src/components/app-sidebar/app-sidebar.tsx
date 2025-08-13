@@ -15,7 +15,7 @@ import {
 import MainItems, { MainItemsProps } from "./main-items"
 import { useAuth, User } from "~/lib/providers/auth-provider"
 import UserItem from "./user-item"
-import { PERMISSIONS, hasAnyUserPermission } from "~/lib/permissions"
+import { PERMISSION_OBJECTS, hasAnyPermission } from "~/lib/permissions"
 
 
 const navItems = {
@@ -40,7 +40,12 @@ const navItems = {
       title: "Users",
       href: "/users",
       icon: <UserIcon></UserIcon>,
-      customPermissionCheck: hasAnyUserPermission // Show if user has any user-related permission
+      customPermissionCheck: (user: User | null) => hasAnyPermission(user, [
+        PERMISSION_OBJECTS.READ_USER,
+        PERMISSION_OBJECTS.CREATE_USER,
+        PERMISSION_OBJECTS.UPDATE_USER,
+        PERMISSION_OBJECTS.DELETE_USER
+      ]) // Show if user has any user-related permission
     },
     {
       title: "Assets",
