@@ -1,5 +1,5 @@
 import { A, createAsync, query, redirect, RouteDefinition, useNavigate } from "@solidjs/router";
-import { getCurrentUserQuery, useAuthSafe } from "~/lib/providers/auth-provider";
+import { protectRoute } from "$lib/auth-actions";
 import { createEffect, createMemo, createSignal, For, JSX, onMount, Show, Suspense } from "solid-js";
 import { AppSidebar } from "~/components/app-sidebar/app-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar"
@@ -7,11 +7,11 @@ import { SiteHeader } from "~/components/site-header";
 import { usePageinfo } from "~/lib/providers/pageinfo-provider";
 
 export const route = {
-  preload: () => { getCurrentUserQuery(); }
+  preload: () => { protectRoute(); }
 } satisfies RouteDefinition;
 
 export default function AppLayout(props: any) {
-  const auth = createAsync(() => getCurrentUserQuery());
+  const user = createAsync(() => protectRoute());
 
   
 
@@ -26,10 +26,10 @@ export default function AppLayout(props: any) {
         } as JSX.CSSProperties
       }>
         <Suspense>
-          <Show when={auth()?.user}>
-            {(a) =>
+          <Show when={user()}>
+            {(u) =>
               <>
-                <AppSidebar variant="inset" user={a()} />
+                <AppSidebar variant="inset" user={u()} />
                 <SidebarInset class="flex flex-col w-full ">
                   <SiteHeader></SiteHeader>
 

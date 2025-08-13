@@ -13,7 +13,7 @@ import { TextField, TextFieldInput, TextFieldLabel } from "~/components/ui/text-
 import { Tooltip, TooltipContent, TooltipTrigger } from "~/components/ui/tooltip";
 import { Upload, Trash2, Eye, FileIcon, ImageIcon, VideoIcon, FileTextIcon, X } from "lucide-solid";
 import { useAuth } from "~/lib/providers/auth-provider";
-import { hasPermission, PERMISSION_OBJECTS } from "~/lib/permissions";
+import { hasPermission } from "~/lib/session";
 import PermissionGuard from "~/components/permission-guard";
 
 type AssetInfo = components["schemas"]["AssetInfo"];
@@ -275,8 +275,9 @@ function AssetViewer(props: { asset: AssetInfo }) {
                     </div>
                     <div class="flex items-center gap-2">
                         <PermissionGuard
-                            user={useAuth().user()}
-                            permission={PERMISSION_OBJECTS.DELETE_ASSET}
+                            user={useAuth()()}
+                            action="DELETE"
+                            resource="ASSET"
                             fallback={
                                 <Tooltip>
                                     <TooltipTrigger as={Button} variant="ghost" size="sm" disabled class="h-8 w-8 p-0">
@@ -500,7 +501,7 @@ function AssetUpload() {
 }
 
 export default function Assets() {
-    const { user } = useAuth();
+    const user = useAuth();
     const assets = createAsync(() => assetsDataQuery());
 
     const handleRowClick = (asset: AssetInfo) => {
@@ -519,7 +520,8 @@ export default function Assets() {
                 </div>
                 <PermissionGuard
                     user={user()}
-                    permission={PERMISSION_OBJECTS.CREATE_ASSET}
+                    action="CREATE"
+                    resource="ASSET"
                     fallback={null}
                 >
                     <AssetUpload />

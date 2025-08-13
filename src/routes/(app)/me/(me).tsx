@@ -109,7 +109,7 @@ const userQuery = query(async () => {
 }, "current-user");
 
 export default function UserSettings() {
-  const auth = useAuth();
+  const user = useAuth();
   const currentUser = createAsync(() => userQuery());
   
   // Username form state
@@ -232,15 +232,15 @@ export default function UserSettings() {
           <CardContent class="space-y-4">
             <div>
               <span class="text-sm font-medium text-muted-foreground">Username:</span>
-              <p class="text-lg font-semibold">{currentUser()?.username || auth.user()?.username || "Loading..."}</p>
+              <p class="text-lg font-semibold">{currentUser()?.username || user()?.username || "Loading..."}</p>
             </div>
             <div>
               <span class="text-sm font-medium text-muted-foreground">User ID:</span>
-              <p class="text-sm text-muted-foreground font-mono">{currentUser()?.id || auth.user()?.id || "Loading..."}</p>
+              <p class="text-sm text-muted-foreground font-mono">{currentUser()?.id || user()?.id || "Loading..."}</p>
             </div>
             <div>
               <span class="text-sm font-medium text-muted-foreground">Permissions:</span>
-              <p class="text-sm">{currentUser()?.permissions?.join(", ") || auth.user()?.permissions?.join(", ") || "Loading..."}</p>
+              <p class="text-sm">{currentUser()?.permissions?.join(", ") || user()?.permissions?.join(", ") || "Loading..."}</p>
             </div>
           </CardContent>
         </Card>

@@ -1,171 +1,204 @@
+"use server";
 
-import { type SessionConfig, useSession as useSessionBase } from "vinxi/http"
-import { User } from "./providers/auth-provider";
-import {anonymousAuthClient} from "./client";
+import { useSession, type SessionConfig, getSession } from "vinxi/http";
+import { redirect } from "@solidjs/router";
+import createClient from "openapi-fetch";
+import { paths as authPaths } from "$api/auth-client";
 
-type SessionData = {
-    user?: User;
-    tokens?: {
-        jwt: string;
-        refresher: string;
-        jwtExp: number;
-        refresherExp: number;
-    };
-    loginAt?: number; // Timestamp when user logged in
-    lastActivity?: number; // Track user activity for session timeout
+
+// Anonymous client for auth operations (no middleware)
+const anonymousAuthClient = createClient<authPaths>({
+  baseUrl: process.env.AUTH_API,
+});
+
+// Session type - stores user data AND JWT for microservice calls
+type AuthSession = {
+  user?: {
+    id: string;
+    username: string;
+    permissions: Array<{ action: string; resource: string }>;
+  };
+  tokens?: {
+    jwt: string;
+    refresher: string;
+    jwtExp: number;
+    refresherExp: number;
+  };
+  loginAt?: number;
+};
+
+// Updated sessionConfig to use environment variable for password and added logging for debugging
+const sessionConfig: SessionConfig = {
+  password: "onmrB83yv8TtcRcLfjXU10EsyUcemtsm9N+XdWzxqZ0=", // Ensure this is consistent across environments
+  name: "auth",
+  maxAge: 60 * 60 * 24 * 7, // 7 days
+  cookie: {
+    secure: process.env.NODE_ENV === "production", // Secure cookies in production
+    sameSite: "lax", // Adjust SameSite if cross-origin requests are needed
+    httpOnly: true, // Prevent client-side access to cookies
+  },
+};
+
+// Use session
+export async function useAuthSession() {
+  const session = await useSession<AuthSession>(sessionConfig);
+  console.log("Session retrieved:", session.data);
+  return session;
 }
 
-export const SessionDefaults = {
-    password: process.env.SESSION_SECRET || "onmrB83yv8TtcRcLfjXU10EsyUcemtsm9N+XdWzxqZ0=",
-    name: "adminSession",
-    maxAge: 60 * 60 * 24 * 31,
-    //secure: process.env.NODE_ENV === "production",
-  //  httpOnly: true,
-    sameSite: "lax" as const,
-} as SessionConfig;
-
-export async function useSession(): Promise<ReturnType<typeof useSessionBase<SessionData>>> {
-    const session = await useSessionBase<SessionData>(SessionDefaults);
-    return session;
+export async function getAuthSession() {
+  const session = await getSession<AuthSession>(sessionConfig);
+  console.log("Session retrieved:", session.data);
+  return session;
 }
 
-// Helper functions for better session management
-export async function setUserSession(user: User, tokens: { jwt: string; refresher: string; jwtExp: number; refresherExp: number }) {
-    try {
-        const session = await useSession();
-        const now = Date.now();
-        
-        await session.update((data) => ({
-            ...data,
-            user,
-            tokens,
-            loginAt: now,
-            lastActivity: now,
-        }));
-    } catch (error) {
-        console.error("Error setting user session:", error);
-        throw error;
+// Login function - stores both user data and JWT tokens
+export async function login(username: string, password: string) {
+  try {
+    // Call auth API to get JWT tokens
+    const { data, error } = await anonymousAuthClient.POST("/auth/login", {
+      body: { username, password },
+    });
+
+    if (error || !data) {
+      return { success: false };
     }
-}
 
-export async function updateUserActivity() {
-    try {
-        const session = await useSession();
-        const data = session.data;
-        
-        // Only update if enough time has passed to avoid excessive updates
-        const now = Date.now();
-        const minUpdateInterval = 60 * 1000; // 1 minute
-        
-        if (data?.lastActivity && (now - data.lastActivity) < minUpdateInterval) {
-            return; // Skip update if last activity was recent
-        }
-        
-        await session.update((sessionData) => ({
-            ...sessionData,
-            lastActivity: now,
-        }));
-    } catch (error) {
-        // Don't throw on activity update errors to avoid breaking the flow
-        console.warn("Could not update user activity:", error);
+    // Get user info using the JWT
+    const userResponse = await anonymousAuthClient.GET("/me", {
+      headers: { Authorization: `Bearer ${data.jwt.token}` },
+    });
+
+    if (userResponse.error || !userResponse.data) {
+      return { success: false };
     }
+
+    // Store BOTH user data and tokens in session
+    const session = await useAuthSession();
+    await session.update(() => ({
+      user: userResponse.data,
+      tokens: {
+        jwt: data.jwt.token,
+        refresher: data.refresher.token,
+        jwtExp: data.jwt.exp,
+        refresherExp: data.refresher.exp,
+      },
+      loginAt: Date.now(),
+    }));
+
+    return { success: true };
+  } catch (error) {
+    return { success: false };
+  }
 }
 
-export async function isSessionValid(): Promise<boolean> {
-    const session = await useSession();
+// Logout
+export async function logout() {
+  const session = await useAuthSession();
+  await session.clear();
+}
+
+// Get current user (throws redirect if not authenticated)
+export async function requireAuth() {
+  try {
+    const session = await useAuthSession();
     const data = session.data;
-    
-    if (!data?.user || !data?.tokens) {
-        return false;
+    console.log("Current session data:", data);
+    if (!data?.user) {
+      throw redirect("/login");
     }
-    
-    const now = Date.now();
-    const maxInactivity = 60 * 60 * 1000; // 1 hour of inactivity
-    
-    if (data.tokens.jwtExp < now / 1000) {
-        return false;
-    }
-    
-    // Check if session has been inactive too long
-    if (data.lastActivity && (now - data.lastActivity) > maxInactivity) {
-        return false;
-    }
-    
+
+    return data.user;
+  }
+  catch (error) {
+    console.log("Authentication error:", error);
+    throw redirect("/login");
+  }
+}
+
+// Get current user (returns null if not authenticated)
+export async function getCurrentUser() {
+  const session = await getAuthSession();
+  return session.data?.user || null;
+}
+
+// Get current JWT for microservice calls
+export async function getCurrentJWT(): Promise<string | null> {
+  const session = await getAuthSession();
+  const data = session.data;
+
+  if (!data?.tokens) return null;
+
+  // Check if JWT is expired
+  const now = Date.now() / 1000;
+  if (data.tokens.jwtExp <= now) {
+    // Try to refresh the token
+    const refreshed = await refreshJWT();
+    if (!refreshed) return null;
+
+    // Get the new token
+    const updatedSession = await getAuthSession();
+    return updatedSession.data?.tokens?.jwt || null;
+  }
+
+  return data.tokens.jwt;
+}
+
+// Refresh JWT when expired
+async function refreshJWT(): Promise<boolean> {
+  try {
+    const session = await useAuthSession();
+    const data = session.data;
+
+    if (!data?.tokens?.refresher) return false;
+
+    // Check if refresh token is expired
+    const now = Date.now() / 1000;
+    if (data.tokens.refresherExp <= now) return false;
+
+    // Call refresh endpoint
+    const { data: newTokens, error } = await anonymousAuthClient.POST("/auth/refresh", {
+      body: { refresher: data.tokens.refresher },
+    });
+
+    if (error || !newTokens) return false;
+
+    // Update session with new tokens
+    await session.update((current) => ({
+      ...current,
+      tokens: {
+        jwt: newTokens.jwt.token,
+        refresher: newTokens.refresher.token,
+        jwtExp: newTokens.jwt.exp,
+        refresherExp: newTokens.refresher.exp,
+      },
+    }));
+
     return true;
+  } catch (error) {
+    return false;
+  }
 }
 
-export async function clearUserSession() {
-    try {
-        const session = await useSession();
-        await session.clear();
-    } catch (error) {
-        console.warn("Could not clear user session:", error);
-        // Don't throw - this might be called during redirects
-    }
+// Simple permission check
+export function hasPermission(
+  user: AuthSession["user"],
+  action: string,
+  resource: string
+): boolean {
+  if (!user?.permissions) return false;
+  return user.permissions.some(p => p.action === action && p.resource === resource);
 }
 
-export async function getJwtToken(): Promise<string | null> {
-    try {
-        const session = await useSession();
-        const sessionData = session.data;
-        return sessionData?.tokens?.jwt || null;
-    } catch (error) {
-        console.error("Error getting JWT token:", error);
-        return null;
-    }
-}
-
-
-export async function refreshJwtToken(): Promise<boolean> {
-    try {
-        const session = await useSession();
-        const sessionData = session.data;
-        
-        if (!sessionData?.tokens?.refresher) {
-            console.log("No refresh token available");
-            return false;
-        }
-        
-        const now = Date.now() / 1000;
-        if (sessionData.tokens.refresherExp <= now) {
-            console.log("Refresh token is expired");
-            return false;
-        }
-        
-        // Import authClient here to avoid circular dependency
-     
-        // Call the refresh endpoint
-        const { data, error } = await anonymousAuthClient.POST("/auth/refresh", {
-            body: { refresher: sessionData.tokens.refresher },
-        });
-        
-        if (error || !data) {
-            console.log("Token refresh failed");
-            return false;
-        }
-        
-        // Update session with new tokens
-        const tokens = data as any; // Type this based on your Tokens type
-        try {
-            await session.update((currentData) => ({
-                ...currentData,
-                tokens: {
-                    jwt: tokens.jwt.token,
-                    refresher: tokens.refresher.token,
-                    jwtExp: tokens.jwt.exp,
-                    refresherExp: tokens.refresher.exp,
-                },
-                lastActivity: Date.now(),
-            }));
-            
-            console.log("JWT token refreshed successfully");
-            return true;
-        } catch (sessionError) {
-            console.error("Failed to update session with new tokens:", sessionError);
-            return false;
-        }
-    } catch (error) {
-        console.error("Error refreshing JWT token:", error);
-        return false;
-    }
+// Added a test route to verify session updates
+export async function testSession() {
+  const session = await useAuthSession();
+  console.log("Testing session update:", session.data);
+  await session.update(() => ({
+    user: { id: "test", username: "tester", permissions: [] },
+    tokens: { jwt: "test-jwt", refresher: "test-refresher", jwtExp: Date.now() / 1000 + 3600, refresherExp: Date.now() / 1000 + 7200 },
+    loginAt: Date.now(),
+  }));
+  console.log("Session after update:", session.data);
+  return session.data;
 }

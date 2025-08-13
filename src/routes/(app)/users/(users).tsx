@@ -6,7 +6,7 @@ import { A, createAsync, query, RouteDefinition, useNavigate } from "@solidjs/ro
 import type { Column } from "~/components/ui/data-table";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { useSession } from "~/lib/session";
+import { requireAuth } from "~/lib/session";
 import { components } from "~/lib/.api/auth-client";
 import { Badge } from "~/components/ui/badge";
 
@@ -14,9 +14,9 @@ type UserStatus = components["schemas"]["UserStatusEnum"];
 
 const usersDataQuery = query(async () => {
     "use server";
-    let session = await useSession();
+    let user = await requireAuth();
 
-    console.log(session.data.user?.permissions);
+    console.log(user?.permissions);
 
 
     const { data: usernames, response: getUserIdsResponse, error } = await authClient.GET("/users", {
@@ -62,10 +62,12 @@ const usersDataQuery = query(async () => {
     }
 
     usersData.map(user => {
-        user.permissions = user.permissions.map(permissionId => {
-            const permission = permissionsData.find(p => p.id === permissionId);
-            return permission ? permission.permission_name : 'Unknown Permission';
-        });
+        user.permissions = user.permissions
+            .map(permissionId => {
+                const permission = permissionsData.find(p => p.id === permissionId);
+                return permission ? permission.permission_name : undefined;
+            })
+            .filter((p): p is string => typeof p === "string");
     })
 
     return usersData;

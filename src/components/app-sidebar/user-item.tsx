@@ -1,9 +1,9 @@
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuGroup } from "../ui/dropdown-menu"
 import { CogIcon, EllipsisVertical, LogOut } from "lucide-solid"
-import { useAuth } from "~/lib/providers/auth-provider"
-import { A, redirect, useNavigate } from "@solidjs/router"
+import { A, redirect, useNavigate, useAction } from "@solidjs/router"
 import { Button } from "../ui/button"
+import { logoutAction } from "$lib/auth-actions"
 
 interface UserItemProps {
   username: string
@@ -11,11 +11,10 @@ interface UserItemProps {
 
 export default function UserItem(props: UserItemProps) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const logoutActionFn = useAction(logoutAction);
 
   const logoutClick = async () => {
-    await logout();
-    navigate("/login")
+    await logoutActionFn();
   }
 
 
