@@ -112,6 +112,16 @@ export default function UserSettings() {
   const user = useAuth();
   const currentUser = createAsync(() => userQuery());
   
+  // Helper to format permissions that can be either string[] or { action, resource }[]
+  const formatPermissions = (perms: any[] | undefined) => {
+    if (!perms) return "";
+    if (perms.length === 0) return "None";
+    // If permissions are strings
+    if (typeof perms[0] === "string") return perms.join(", ");
+    // Otherwise assume objects with action and resource
+    return perms.map(p => `${p.action}:${p.resource}`).join(", ");
+  };
+  
   // Username form state
   const [usernameStatus, setUsernameStatus] = createSignal<"idle" | "submitting" | "success" | "error">("idle");
   const [usernameMessage, setUsernameMessage] = createSignal<string>("");
@@ -240,7 +250,7 @@ export default function UserSettings() {
             </div>
             <div>
               <span class="text-sm font-medium text-muted-foreground">Permissions:</span>
-              <p class="text-sm">{currentUser()?.permissions?.join(", ") || user()?.permissions?.join(", ") || "Loading..."}</p>
+              <p class="text-sm">{(currentUser()?.permissions ? formatPermissions(currentUser()?.permissions) : (user()?.permissions ? formatPermissions(user()?.permissions) : "Loading..."))}</p>
             </div>
           </CardContent>
         </Card>
@@ -251,7 +261,7 @@ export default function UserSettings() {
             <CardTitle>Update Username</CardTitle>
           </CardHeader>
           <CardContent>
-            <form ref={usernameFormRef} onSubmit={handleUsernameSubmit} class="space-y-4">
+            <form ref={(el) => (usernameFormRef = el as HTMLFormElement | undefined)} onSubmit={handleUsernameSubmit} class="space-y-4">
               <TextField>
                 <TextFieldLabel for="new_username">New Username</TextFieldLabel>
                 <TextFieldInput
@@ -291,7 +301,7 @@ export default function UserSettings() {
             <CardTitle>Update Password</CardTitle>
           </CardHeader>
           <CardContent>
-            <form ref={passwordFormRef} onSubmit={handlePasswordSubmit} class="space-y-4">
+            <form ref={(el) => (passwordFormRef = el as HTMLFormElement | undefined)} onSubmit={handlePasswordSubmit} class="space-y-4">
               <TextField>
                 <TextFieldLabel for="old_password">Current Password</TextFieldLabel>
                 <TextFieldInput
@@ -357,7 +367,7 @@ export default function UserSettings() {
             <CardTitle>Update Account Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <form ref={statusFormRef} onSubmit={handleStatusSubmit} class="space-y-4">
+            <form ref={(el) => (statusFormRef = el as HTMLFormElement | undefined)} onSubmit={handleStatusSubmit} class="space-y-4">
               <div>
                 <label for="status" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                   Account Status
