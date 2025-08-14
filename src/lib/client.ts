@@ -7,11 +7,12 @@ import { paths as assetsPaths } from "$api/assets-client";
 import { getCurrentJWT, logout } from "./session";
 import { redirect } from "@solidjs/router";
 
+
 // Simple auth middleware - just injects JWT and handles 401s
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
     const jwt = await getCurrentJWT();
-    console.log("Auth Middleware - JWT:", jwt);
+  //  console.log("Auth Middleware - JWT:", jwt);
     if (jwt) {
       request.headers.set("Authorization", `Bearer ${jwt}`);
     }

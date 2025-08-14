@@ -11,7 +11,7 @@ export interface SimplePermissionGuardProps {
 }
 
 export default function SimplePermissionGuard(props: SimplePermissionGuardProps) {
-  const allowed = () => hasPermission(props.user || undefined, props.action, props.resource);
+  const allowed = () => props.user ? hasPermission(props.user, props.action, props.resource) : false;
   
   return (
     <Show when={allowed()} fallback={props.fallback}>

@@ -41,10 +41,10 @@ const navItems = {
       href: "/users",
       icon: <UserIcon></UserIcon>,
       customPermissionCheck: (user: User | null) => 
-        hasPermission(user || undefined, "READ", "USER") ||
-        hasPermission(user || undefined, "CREATE", "USER") ||
-        hasPermission(user || undefined, "UPDATE", "USER") ||
-        hasPermission(user || undefined, "DELETE", "USER")
+        hasPermission(user as User, "READ", "USER") ||
+        hasPermission(user as User, "CREATE", "USER") ||
+        hasPermission(user as User, "UPDATE", "USER") ||
+        hasPermission(user as User, "DELETE", "USER")
       // Show if user has any user-related permission
     },
     {

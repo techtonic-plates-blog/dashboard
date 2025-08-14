@@ -1,11 +1,26 @@
 import { Title } from "@solidjs/meta";
-import { Show } from "solid-js";
+import { createEffect, Show } from "solid-js";
 import { Card, CardContent, CardHeader, CardTitle } from "$components/ui/card";
 import { TextField, TextFieldLabel, TextFieldInput } from "$components/ui/text-field";
 import { Button } from "~/components/ui/button";
 import { loginAction } from "$lib/auth-actions";
+import { useSubmission } from "@solidjs/router";
+import { useNavigate } from "@solidjs/router";
 
 export default function Login() {
+  let navigate = useNavigate();
+  let loginSubmission = useSubmission(loginAction)
+
+  createEffect(() => {
+    if (loginSubmission.error) {
+      alert("Login failed:" + loginSubmission.error);
+      // Handle error display logic here, e.g., show a toast or alert
+    }
+    else if (loginSubmission.result) {
+    
+    }
+  });
+
   return (
     <main class="flex items-center justify-center h-screen">
       <Title>Login</Title>
